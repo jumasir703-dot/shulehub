@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Exams{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Exam Analysis</h1>
+    <p class="section-note">Set an exam, enter marks, and get merit lists, subject analysis and report forms.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn secondary" href="{{ url_for('analytics.students_page') }}">Students ({{ n_students }})</a>
+    <a class="btn secondary" href="{{ url_for('analytics.compare_page') }}">Compare exams</a>
+    <a class="btn secondary" href="{{ url_for('analytics.grading_page') }}">Grading scales</a>
+    <a class="btn" href="{{ url_for('analytics.new_exam') }}">+ New exam</a>
+  </div>
+</div>
+
+{% if n_students == 0 %}
+<div class="card callout">
+  <strong>Start by adding your students.</strong>
+  <p class="section-note">Exams are marked per student, so add them one by one or import a CSV from the
+  <a href="{{ url_for('analytics.students_page') }}">Students</a> page. Make sure the streams exist first under
+  <a href="{{ url_for('grades_page') }}">Grades &amp; Streams</a>.</p>
+</div>
+{% endif %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div>
+      <label>Filter by grade</label>
+      <select name="grade_id" onchange="this.form.submit()">
+        <option value="">All grades</option>
+        {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if grade_id == g.id }}>{{ g.name }}</option>{% endfor %}
+      </select>
+    </div>
+  </form>
+  <div class="table-scroll">
+  <table style="margin-top:14px;">
+    <thead><tr><th>Exam</th><th>Grade</th><th>Term / Year</th><th>Subjects</th><th>Marks entered</th><th></th></tr></thead>
+    <tbody>
+    {% for e in exams %}
+      <tr>
+        <td><a href="{{ url_for('analytics.exam_overview', exam_id=e.id) }}"><strong>{{ e.name }}</strong></a></td>
+        <td>{{ e.grade_name }}</td>
+        <td>Term {{ e.term }}, {{ e.year }}</td>
+        <td>{{ e.n_subjects }}</td>
+        <td>
+          {{ e.n_marked }} / {{ e.n_students }} students
+          {% if e.n_students %}<span class="meter"><i style="width: {{ (100 * e.n_marked / e.n_students)|round|int }}%"></i></span>{% endif %}
+        </td>
+        <td style="text-align:right;">
+          <a class="btn secondary" href="{{ url_for('analytics.marks_page', exam_id=e.id) }}">Enter marks</a>
+          <a class="btn secondary" href="{{ url_for('analytics.merit_list', exam_id=e.id) }}">Merit list</a>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="section-note">No exams yet — create one to get started.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

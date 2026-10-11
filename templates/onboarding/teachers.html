@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% import "onboarding/_rail.html" as rail %}
+{% block title %}Setup · Teachers{% endblock %}
+{% block content %}
+<div class="card setup-card">
+  {{ rail.rail(steps, active_step) }}
+  <h1>Add your teaching staff</h1>
+  <p class="section-note">Enter each teacher's name and rank (optional — used to order staff lists). You can add more, or edit these, later from the Teachers page.</p>
+
+  {% if teachers %}
+    <p class="section-note"><strong>{{ teachers|length }}</strong> teacher(s) added so far: {{ teachers|map(attribute='name')|join(', ') }}</p>
+  {% endif %}
+
+  <form method="POST" id="teacher-form">
+    <div id="teacher-rows">
+      <div class="setup-row">
+        <input type="text" name="teacher_name" placeholder="e.g. J. Nyaboke">
+        <input type="number" name="teacher_rank" class="rank-input" placeholder="Rank (optional)">
+      </div>
+      <div class="setup-row">
+        <input type="text" name="teacher_name" placeholder="e.g. P. Omondi">
+        <input type="number" name="teacher_rank" class="rank-input" placeholder="Rank (optional)">
+      </div>
+      <div class="setup-row">
+        <input type="text" name="teacher_name" placeholder="e.g. S. Chebet">
+        <input type="number" name="teacher_rank" class="rank-input" placeholder="Rank (optional)">
+      </div>
+    </div>
+    <button type="button" class="secondary" onclick="addTeacherRow()">+ Add another row</button>
+
+    <div class="setup-actions">
+      <a href="{{ url_for('onboarding.subjects') }}"><button type="button" class="secondary">Skip this step</button></a>
+      <button type="submit">Save &amp; Continue</button>
+    </div>
+  </form>
+</div>
+
+<script>
+function addTeacherRow(){
+  const container = document.getElementById('teacher-rows');
+  const row = document.createElement('div');
+  row.className = 'setup-row';
+  row.innerHTML = '<input type="text" name="teacher_name" placeholder="Teacher name">' +
+                  '<input type="number" name="teacher_rank" class="rank-input" placeholder="Rank (optional)">';
+  container.appendChild(row);
+}
+</script>
+{% endblock %}

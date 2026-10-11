@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "onboarding/_rail.html" as rail %}
+{% block title %}Setup · Done{% endblock %}
+{% block content %}
+<div class="card setup-card" style="text-align:center;">
+  {{ rail.rail(steps, active_step) }}
+  <h1>You're all set</h1>
+  <p class="section-note">
+    Your teachers and subjects are saved. Next up: add Rooms, confirm your
+    Day Structure and any Scheduling Rules, then head to the Timetable
+    Builder — the Quick-Start Guide walks through each of those with
+    screenshots if you want a hand.
+  </p>
+  <div class="welcome-actions">
+    <form method="POST">
+      <button type="submit">Go to Dashboard</button>
+    </form>
+    <a href="{{ url_for('guide_page') }}"><button type="button" class="secondary">Quick-Start Guide</button></a>
+  </div>
+</div>
+{% endblock %}

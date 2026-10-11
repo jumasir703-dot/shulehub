@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Subjects · {{ exam.name }}{% endblock %}
+{% block content %}
+{% include "analytics/_nav.html" %}
+
+<div class="card">
+  <h3>Subject performance — whole {{ exam.grade_name }}</h3>
+  <div class="table-scroll">
+  <table>
+    <thead>
+      <tr><th>Rank</th><th>Subject</th><th class="num">Sat</th><th class="num">Mean</th><th class="num">Mean %</th>
+          <th>{{ 'Level' if res.scale == 'CBC8' else 'Grade' }}</th><th class="num">Highest</th><th class="num">Lowest</th><th class="num">Pass rate</th>
+          {% for b in res.bands %}<th class="num dist-h">{{ b.label }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+    {% for s in stats %}
+      <tr>
+        <td>{{ s.rank or '—' }}</td><td>{{ s.name }} <small class="muted">/ {{ s.out_of }}</small></td>
+        <td class="num">{{ s.entries }}</td><td class="num">{{ s.mean_score|pct }}</td>
+        <td class="num"><strong>{{ s.mean_pct|pct }}</strong></td>
+        <td>{% if s.label %}<span class="chip {{ s.label|lvl }}">{{ s.label }}</span>{% endif %}</td>
+        <td class="num">{{ s.highest|num }}</td><td class="num">{{ s.lowest|num }}</td>
+        <td class="num">{{ s.pass_rate|pct if s.entries else '—' }}{{ '%' if s.entries }}</td>
+        {% for b in res.bands %}<td class="num dist">{{ s.dist.get(b.label, '') }}</td>{% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">Pass rate = students scoring {{ res.pass_pct }}% or more. The right-hand columns count how many students got each {{ 'level' if res.scale == 'CBC8' else 'grade' }}.</p>
+</div>
+
+<div class="card">
+  <h3>Subject × stream (mean %)</h3>
+  <p class="section-note">The teacher shown is whoever the timetable assigns to that stream and subject.</p>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Subject</th>{% for st in streams %}<th>{{ st.name }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for row in grid %}
+      <tr>
+        <td>{{ row.subject.name }}</td>
+        {% for c in row.cells %}
+          <td>{% if c %}<span class="cell {{ c.label|lvl }}">{{ c.mean_pct|pct }}</span> <span class="muted">({{ c.entries }})</span>
+              {% if c.teacher %}<div class="teacher">{{ c.teacher }}</div>{% endif %}{% endif %}</td>
+        {% endfor %}
+      </tr>
+    {% else %}
+      <tr><td colspan="{{ streams|length + 1 }}" class="section-note">No marks yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Teacher performance</h3>
+  {% if teachers %}
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Rank</th><th>Teacher</th><th>Subjects</th><th>Streams</th><th class="num">Marks</th><th class="num">Mean %</th><th>{{ 'Level' if res.scale == 'CBC8' else 'Grade' }}</th></tr></thead>
+    <tbody>
+    {% for t in teachers %}
+      <tr><td>{{ t.rank }}</td><td>{{ t.teacher }}</td><td>{{ t.subjects }}</td><td>{{ t.streams }}</td>
+          <td class="num">{{ t.entries }}</td><td class="num"><strong>{{ t.mean_pct|pct }}</strong></td>
+          <td><span class="chip {{ t.label|lvl }}">{{ t.label }}</span></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">Averages over every mark in the classes each teacher is timetabled to teach. Treat it as a conversation starter, not a verdict — class mix and starting level matter.</p>
+  {% else %}
+  <p class="section-note">No teachers could be matched. Build the timetable (with teachers assigned to each stream and subject) and they'll appear here automatically.</p>
+  {% endif %}
+</div>
+{% endblock %}

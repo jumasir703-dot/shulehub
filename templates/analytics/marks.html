@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Marks · {{ exam.name }}{% endblock %}
+{% block content %}
+{% include "analytics/_nav.html" %}
+
+{% if not n_exam_subjects %}
+<div class="card callout"><strong>No subjects on this exam.</strong>
+  <p class="section-note">Choose the examined subjects under <a href="{{ url_for('analytics.exam_setup', exam_id=exam.id) }}">Setup</a>.</p></div>
+{% elif not picker %}
+<div class="card callout"><strong>No students in {{ exam.grade_name }} yet.</strong>
+  <p class="section-note">Add them on the <a href="{{ url_for('analytics.students_page', grade_id=exam.grade_id) }}">Students</a> page.</p></div>
+{% else %}
+<div class="card">
+  <div class="form-row" style="margin-top:0;">
+    <form method="get" style="display:contents;">
+      <div style="max-width:320px;">
+        <label>Class / stream</label>
+        <select name="stream_id" onchange="this.form.submit()">
+          {% for s in picker %}
+            <option value="{{ s.id }}" {{ 'selected' if selected == s.id|string }}>{{ s.name }} ({{ s.n }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+    <div style="flex:0 0 auto;">
+      <a class="btn secondary" href="{{ url_for('analytics.marks_template', exam_id=exam.id, stream_id=selected) }}">Download CSV template</a>
+    </div>
+  </div>
+</div>
+
+<form method="post" action="{{ url_for('analytics.marks_save', exam_id=exam.id) }}" class="card" id="marks-form">
+  <input type="hidden" name="stream_id" value="{{ selected }}">
+  <p class="section-note" style="margin:0 0 10px;">Type a mark in each box (Tab moves across, Enter moves down). Leave a box <strong>blank</strong> if the student didn't sit or doesn't take that subject.</p>
+  <div class="table-scroll marks-scroll">
+  <table class="marks-table">
+    <thead>
+      <tr>
+        <th class="sticky-col">Student</th>
+        {% for sub in subjects %}<th class="mk-head">{{ sub.name }}<small>/ {{ sub.out_of }}</small></th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for st in students %}
+      <tr>
+        <td class="sticky-col"><span class="adm">{{ st.admission_no }}</span> {{ st.name }}</td>
+        {% for sub in subjects %}
+          <td><input class="mk" type="text" inputmode="decimal" autocomplete="off"
+                     name="m_{{ st.id }}_{{ sub.id }}" data-max="{{ sub.out_of }}"
+                     value="{{ marks.get((st.id, sub.id))|num }}"></td>
+        {% endfor %}
+      </tr>
+    {% else %}
+      <tr><td colspan="{{ subjects|length + 1 }}" class="section-note">No students in this stream.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if students %}<div style="margin-top:14px;"><button type="submit">Save marks</button></div>{% endif %}
+</form>
+
+<div class="card">
+  <h3>Import from Excel, PDF or CSV</h3>
+  <p class="section-note">Download the template above, fill in the marks in Excel, and upload the .xlsx file directly (CSV also works). A PDF works too if it contains a real table with a heading row — check the result afterwards. Rows are matched by admission number and columns by subject name. Blank cells are left untouched.</p>
+  <form method="post" action="{{ url_for('analytics.marks_import', exam_id=exam.id) }}" enctype="multipart/form-data" class="form-row">
+    <input type="hidden" name="stream_id" value="{{ selected }}">
+    <div><input type="file" name="file" accept=".csv,.xlsx,.xlsm,.pdf,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></div>
+    <div style="flex:0;"><button type="submit">Import</button></div>
+  </form>
+</div>
+{% endif %}
+
+<script>
+(function(){
+  const form = document.getElementById('marks-form');
+  if (!form) return;
+  const inputs = Array.from(form.querySelectorAll('input.mk'));
+  const perRow = form.querySelectorAll('thead th.mk-head').length;
+
+  function check(el){
+    const v = el.value.trim().replace(',', '.');
+    const bad = v !== '' && (isNaN(Number(v)) || Number(v) < 0 || Number(v) > Number(el.dataset.max));
+    el.classList.toggle('mk-bad', bad);
+  }
+  inputs.forEach((el, i) => {
+    el.addEventListener('input', () => check(el));
+    el.addEventListener('focus', () => el.select());
+    el.addEventListener('keydown', (e) => {
+      let target = null;
+      if (e.key === 'Enter' || e.key === 'ArrowDown') target = inputs[i + perRow];
+      else if (e.key === 'ArrowUp') target = inputs[i - perRow];
+      if (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (target) target.focus();
+      }
+    });
+    check(el);
+  });
+  form.addEventListener('submit', (e) => {
+    if (form.querySelector('.mk-bad') && !confirm('Some marks are outside 0 – out-of and will be rejected. Save anyway?')) e.preventDefault();
+  });
+})();
+</script>
+{% endblock %}

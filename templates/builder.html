@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}Timetable Builder{% endblock %}
+{% block content %}
+<h1>Timetable Builder</h1>
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div>
+      <label>Stream</label>
+      <select name="stream_id" onchange="this.form.submit()">
+        {% for s in streams %}
+          <option value="{{ s.id }}" {{ 'selected' if s.id == stream_id }}>{{ s.name }} [{{ s.grade_name }}]</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('generate_timetable') }}" class="form-row"
+        onsubmit="return confirm('This may overwrite existing entries for the selected scope. Continue?');">
+    <input type="hidden" name="stream_id" value="{{ stream_id }}">
+    <div>
+      <label>Auto-generate scope</label>
+      <select name="scope">
+        <option value="stream">This stream only</option>
+        <option value="all">All streams</option>
+      </select>
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <label style="font-weight:normal;">
+        <input type="checkbox" name="overwrite" value="1"> Overwrite existing entries
+      </label>
+    </div>
+    <div style="flex:0;">
+      <label>&nbsp;</label>
+      <button type="submit">Auto-Generate Timetable</button>
+    </div>
+  </form>
+
+  {% if not streams %}
+    <p class="section-note">Create a stream first on the "Grades &amp; Streams" tab.</p>
+  {% else %}
+  <div class="tt-grid" id="tt-grid">
+    <div class="tt-head"></div>
+    {% for day in days %}
+      <div class="tt-head">{{ day }}</div>
+    {% endfor %}
+
+    {% for row in rows %}
+      {% if row.type == 'break' %}
+        <div class="tt-break">{{ row.label }} · {{ row.start_time }}–{{ row.end_time }}</div>
+      {% else %}
+        <div class="tt-period">P{{ row.period_number }}<br>{{ row.start_time }}–{{ row.end_time }}</div>
+        {% for day in days %}
+          {% set cell_entries = entries.get((day, row.period_number), []) %}
+          {% set pid = period_ids.get((day, row.period_number)) %}
+          <div class="tt-cell {{ 'filled' if cell_entries }}"
+               data-day="{{ day }}" data-period="{{ row.period_number }}" data-period-id="{{ pid }}"
+               draggable="{{ 'true' if cell_entries|length == 1 else 'false' }}"
+               ondragstart="onCellDragStart(event, {{ pid }})"
+               ondragend="onCellDragEnd(event)"
+               ondragover="onCellDragOver(event)"
+               ondragleave="onCellDragLeave(event)"
+               ondrop="onCellDrop(event, {{ pid }})"
+               onclick="openCell('{{ day }}', {{ row.period_number }})">
+            {% if cell_entries|length > 1 %}
+              <span class="subj">{{ cell_entries[0].group_name or 'Options' }}</span>
+              {% for entry in cell_entries %}
+                <span class="meta">{{ entry.subject_name }} — {{ entry.teacher_name or '—' }}</span>
+              {% endfor %}
+            {% elif cell_entries %}
+              {% set entry = cell_entries[0] %}
+              <span class="subj">{{ entry.subject_name }}</span>
+              <span class="meta">{{ entry.teacher_name or '—' }}</span>
+              <span class="meta">{{ entry.room_name or '—' }}</span>
+            {% else %}
+              <span class="empty-label">+ add</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <h3 id="modal-title">Edit slot</h3>
+    <div class="field">
+      <label>Subject</label>
+      <select id="modal-subject" onchange="onModalSubjectChange()"></select>
+    </div>
+    <div id="single-fields">
+      <div class="field">
+        <label>Teacher</label>
+        <select id="modal-teacher"></select>
+      </div>
+      <div class="field">
+        <label>Room</label>
+        <select id="modal-room"></select>
+      </div>
+    </div>
+    <div id="group-fields"></div>
+    <div id="conflict-area"></div>
+    <div class="actions">
+      <button onclick="saveCell(false)">Save</button>
+      <button class="secondary" onclick="clearCell()">Clear Slot</button>
+      <button class="secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STREAM_ID = {{ stream_id or 'null' }};
+let currentDay = null, currentPeriod = null, currentPeriodId = null;
+let cellData = null;   // last /api/cell response, kept around for re-renders
+
+function subjectsInGroup(groupId){
+  return cellData.subjects.filter(s => s.group_id === groupId);
+}
+
+function renderGroupFields(groupId, existingBySubject){
+  const members = subjectsInGroup(groupId);
+  const teacherOptions = '<option value="">(none)</option>' +
+    cellData.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  const roomOptions = '<option value="">(none)</option>' +
+    cellData.rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+
+  document.getElementById('group-fields').innerHTML = members.map(m => {
+    const existing = existingBySubject[m.id];
+    return `
+      <div class="field group-member" data-subject-id="${m.id}">
+        <label>${m.name}</label>
+        <div style="display:flex; gap:8px;">
+          <select class="group-teacher">${teacherOptions}</select>
+          <select class="group-room">${roomOptions}</select>
+        </div>
+      </div>`;
+  }).join('');
+
+  members.forEach(m => {
+    const existing = existingBySubject[m.id];
+    const row = document.querySelector(`.group-member[data-subject-id="${m.id}"]`);
+    if (existing && row){
+      row.querySelector('.group-teacher').value = existing.teacher_id || '';
+      row.querySelector('.group-room').value = existing.room_id || '';
+    }
+  });
+}
+
+function onModalSubjectChange(){
+  const subjSel = document.getElementById('modal-subject');
+  const chosen = cellData.subjects.find(s => String(s.id) === subjSel.value);
+  const singleFields = document.getElementById('single-fields');
+  const groupFields = document.getElementById('group-fields');
+
+  if (chosen && chosen.group_id){
+    singleFields.style.display = 'none';
+    const existingBySubject = {};
+    (cellData.existing || []).forEach(e => { existingBySubject[e.subject_id] = e; });
+    renderGroupFields(chosen.group_id, existingBySubject);
+  } else {
+    singleFields.style.display = '';
+    groupFields.innerHTML = '';
+  }
+}
+
+function openCell(day, period){
+  currentDay = day; currentPeriod = period;
+  fetch(`/api/cell?stream_id=${STREAM_ID}&day=${encodeURIComponent(day)}&period_number=${period}`)
+    .then(r => r.json())
+    .then(data => {
+      cellData = data;
+      currentPeriodId = data.period_id;
+      document.getElementById('modal-title').textContent = data.period_label;
+
+      const subjSel = document.getElementById('modal-subject');
+      subjSel.innerHTML = data.subjects.map(s =>
+        `<option value="${s.id}">${s.name}${s.group_id ? ' (group)' : ''}</option>`
+      ).join('');
+
+      const teachSel = document.getElementById('modal-teacher');
+      teachSel.innerHTML = '<option value="">(none)</option>' +
+        data.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+
+      const roomSel = document.getElementById('modal-room');
+      roomSel.innerHTML = '<option value="">(none)</option>' +
+        data.rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+
+      document.getElementById('group-fields').innerHTML = '';
+      document.getElementById('single-fields').style.display = '';
+
+      const existing = data.existing || [];
+      if (existing.length){
+        subjSel.value = existing[0].subject_id;
+        const chosen = data.subjects.find(s => String(s.id) === String(existing[0].subject_id));
+        if (chosen && chosen.group_id){
+          onModalSubjectChange();
+        } else {
+          teachSel.value = existing[0].teacher_id || '';
+          roomSel.value = existing[0].room_id || '';
+        }
+      }
+
+      document.getElementById('conflict-area').innerHTML = '';
+      document.getElementById('modal-backdrop').classList.add('open');
+    });
+}
+
+function closeModal(){
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+function saveCell(force){
+  const subjSel = document.getElementById('modal-subject');
+  const chosen = cellData.subjects.find(s => String(s.id) === subjSel.value);
+
+  if (chosen && chosen.group_id){
+    const entries = Array.from(document.querySelectorAll('.group-member')).map(row => ({
+      subject_id: row.dataset.subjectId,
+      teacher_id: row.querySelector('.group-teacher').value || null,
+      room_id: row.querySelector('.group-room').value || null,
+    }));
+    fetch('/api/cell/save_group', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({stream_id: STREAM_ID, period_id: currentPeriodId, entries: entries, force: force}),
+    })
+    .then(r => r.json())
+    .then(data => handleSaveResponse(data, true));
+    return;
+  }
+
+  const payload = {
+    stream_id: STREAM_ID,
+    period_id: currentPeriodId,
+    subject_id: subjSel.value,
+    teacher_id: document.getElementById('modal-teacher').value || null,
+    room_id: document.getElementById('modal-room').value || null,
+    force: force,
+  };
+  fetch('/api/cell/save', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(data => handleSaveResponse(data, false));
+}
+
+function handleSaveResponse(data, isGroup){
+  if (data.conflicts){
+    document.getElementById('conflict-area').innerHTML =
+      `<div class="conflict-box">${data.conflicts.join('<br>')}<br><br>
+       <button onclick="saveCell(true)">Save anyway</button></div>`;
+    return;
+  }
+  if (data.error){
+    alert(data.error);
+    return;
+  }
+  closeModal();
+  location.reload();
+}
+
+function clearCell(){
+  fetch('/api/cell/clear', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({stream_id: STREAM_ID, period_id: currentPeriodId}),
+  })
+  .then(r => r.json())
+  .then(() => { closeModal(); location.reload(); });
+}
+
+// --- Drag-and-drop: lift a lesson and drop it on another slot to move it,
+// or swap it with whatever lesson is already there. ---
+let dragSourcePeriodId = null;
+
+function onCellDragStart(e, periodId){
+  dragSourcePeriodId = periodId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(periodId));
+  e.currentTarget.classList.add('dragging');
+}
+
+function onCellDragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+}
+
+function onCellDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onCellDragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onCellDrop(e, toPeriodId){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const fromPeriodId = dragSourcePeriodId;
+  dragSourcePeriodId = null;
+  if (!fromPeriodId || fromPeriodId === toPeriodId) return;
+  moveLesson(fromPeriodId, toPeriodId, false);
+}
+
+function moveLesson(fromPeriodId, toPeriodId, force){
+  fetch('/api/cell/move', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      stream_id: STREAM_ID,
+      from_period_id: fromPeriodId,
+      to_period_id: toPeriodId,
+      force: force,
+    }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.conflicts){
+      if (confirm(data.conflicts.join('\n') + '\n\nMove anyway?')){
+        moveLesson(fromPeriodId, toPeriodId, true);
+      }
+      return;
+    }
+    if (data.error){
+      alert(data.error);
+      return;
+    }
+    location.reload();
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}School Settings{% endblock %}
+{% block content %}
+<h1>School Settings</h1>
+
+<div class="card">
+  <p class="section-note">
+    This is the branding that gets "engraved" onto every timetable — the
+    header on every page, the browser/PWA app title, and the title shown on
+    every exported PDF and CSV. Change it once here and it applies
+    everywhere, so the same app can be handed to a different school just by
+    updating this page.
+  </p>
+
+  <form method="post" action="{{ url_for('save_settings') }}">
+    <div class="form-row">
+      <div>
+        <label>School name</label>
+        <input type="text" name="name" value="{{ school.name }}" maxlength="120" required
+               placeholder="e.g. Green Hill Senior School">
+      </div>
+      <div>
+        <label>Tagline / subtitle</label>
+        <input type="text" name="tagline" value="{{ school.tagline }}" maxlength="160"
+               placeholder="e.g. Senior School Timetable">
+      </div>
+      <div style="max-width:120px;">
+        <label>Brand mark (badge)</label>
+        <input type="text" name="brand_mark" value="{{ school.brand_mark }}" maxlength="4"
+               placeholder="e.g. GH">
+      </div>
+    </div>
+
+    <h4 style="margin-top:24px;">Teaching days</h4>
+    <p class="section-note">
+      Choose which weekdays this school holds lessons on. These become the
+      day columns on every generated timetable, the Builder grid, and every
+      export — so a school that also teaches on Saturday can switch that on
+      here instead of being stuck with a fixed Monday–Friday grid.
+    </p>
+    <div class="form-row" style="gap:18px;">
+      {% for day in all_weekdays %}
+      <label style="display:flex; align-items:center; gap:6px; min-width:auto; flex:none;">
+        <input type="checkbox" name="active_days" value="{{ day }}"
+               {{ 'checked' if day in school.active_days }}>
+        {{ day }}
+      </label>
+      {% endfor %}
+    </div>
+
+    <br>
+    <button type="submit">Save School Settings</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>School logo</h3>
+  <p class="section-note">Shown in the page header and on the sign-in page, and printed at the top of timetable, merit list, report form, receipt and fee statement PDFs. Use a PNG or JPG (a transparent PNG looks best); it is resized automatically. Maximum 3 MB.</p>
+  <div class="logo-settings">
+    <div class="logo-preview">
+      {% if school.has_logo %}<img src="{{ url_for('logo_image', v=school.logo_version) }}" alt="Current logo">
+      {% else %}<span class="brand-mark">{{ school.brand_mark }}</span><small class="section-note">No logo yet — the badge is shown instead.</small>{% endif %}
+    </div>
+    <div>
+      <form method="post" action="{{ url_for('save_logo') }}" enctype="multipart/form-data" class="form-row">
+        <div><input type="file" name="logo" accept="image/png,image/jpeg,image/gif,image/webp,.png,.jpg,.jpeg,.gif,.webp" required></div>
+        <div style="flex:0;"><button type="submit">{{ 'Replace logo' if school.has_logo else 'Upload logo' }}</button></div>
+      </form>
+      {% if school.has_logo %}
+      <form method="post" action="{{ url_for('remove_logo') }}" style="margin-top:8px;" onsubmit="return confirm('Remove the school logo?')">
+        <button class="small secondary" type="submit">Remove logo</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

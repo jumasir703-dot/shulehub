@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "onboarding/_rail.html" as rail %}
+{% block title %}Setup · Subjects{% endblock %}
+{% block content %}
+<div class="card setup-card">
+  {{ rail.rail(steps, active_step) }}
+  <h1>Add your subjects</h1>
+  <p class="section-note">Name each subject and pick which grade it belongs to. You can fine-tune periods-per-week and pathways later from the Subjects page.</p>
+
+  {% if subjects %}
+    <p class="section-note"><strong>{{ subjects|length }}</strong> subject(s) added so far: {{ subjects|map(attribute='name')|join(', ') }}</p>
+  {% endif %}
+
+  <form method="POST" id="subject-form">
+    <div id="subject-rows">
+      <div class="setup-row">
+        <input type="text" name="subject_name" placeholder="e.g. Mathematics">
+        <select name="subject_grade" class="grade-select">
+          {% for g in grades %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="setup-row">
+        <input type="text" name="subject_name" placeholder="e.g. English">
+        <select name="subject_grade" class="grade-select">
+          {% for g in grades %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <button type="button" class="secondary" onclick="addSubjectRow()">+ Add another row</button>
+
+    <div class="setup-actions">
+      <a href="{{ url_for('onboarding.complete') }}"><button type="button" class="secondary">Skip this step</button></a>
+      <button type="submit">Save &amp; Continue</button>
+    </div>
+  </form>
+</div>
+
+<script>
+function addSubjectRow(){
+  const container = document.getElementById('subject-rows');
+  const gradeOptions = document.querySelector('.grade-select').innerHTML;
+  const row = document.createElement('div');
+  row.className = 'setup-row';
+  row.innerHTML = '<input type="text" name="subject_name" placeholder="Subject name">' +
+                  '<select name="subject_grade" class="grade-select">' + gradeOptions + '</select>';
+  container.appendChild(row);
+}
+</script>
+{% endblock %}

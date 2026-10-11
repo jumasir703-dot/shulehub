@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Admit a student{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('school.students') }}">← Students</a>
+<h1>Admit a student</h1>
+<form method="post" class="card" style="max-width:860px;">
+  <h3>Student</h3>
+  <div class="form-row">
+    <div><label>Admission no.</label><input type="text" name="admission_no" value="{{ form.get('admission_no', next_adm) }}" required></div>
+    <div style="flex:2;"><label>Full name</label><input type="text" name="name" value="{{ form.get('name','') }}" required autofocus></div>
+    <div style="max-width:110px;"><label>Gender</label>
+      <select name="gender"><option value="">—</option><option {{ 'selected' if form.get('gender') == 'M' }}>M</option><option {{ 'selected' if form.get('gender') == 'F' }}>F</option></select></div>
+  </div>
+  <div class="form-row">
+    <div><label>Grade</label>
+      <select name="grade_id" id="add-grade" required>
+        {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if form.get('grade_id')|string == g.id|string }}>{{ g.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Stream</label>
+      <select name="stream_id" id="add-stream">
+        <option value="">(none)</option>
+        {% for s in streams %}<option value="{{ s.id }}" data-grade="{{ s.grade_id }}" {{ 'selected' if form.get('stream_id')|string == s.id|string }}>{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Date of birth</label><input type="date" name="dob" value="{{ form.get('dob','') }}"></div>
+    <div><label>Date admitted</label><input type="date" name="admission_date" value="{{ form.get('admission_date','') }}"></div>
+  </div>
+  <div class="form-row">
+    <div><label>UPI (NEMIS), optional</label><input type="text" name="upi" value="{{ form.get('upi','') }}"></div>
+    <div style="flex:2;"><label>Notes, optional</label><input type="text" name="notes" value="{{ form.get('notes','') }}"></div>
+  </div>
+
+  {% for i in (1, 2) %}
+  <h3 style="margin-top:24px;">{{ 'Parent / guardian' if i == 1 else 'Second guardian (optional)' }}</h3>
+  <div class="form-row">
+    <div style="flex:2;"><label>Name</label><input type="text" name="g{{ i }}_name" value="{{ form.get('g%d_name' % i, '') }}"></div>
+    <div><label>Relationship</label>
+      <select name="g{{ i }}_rel"><option value="">—</option>{% for r in relationships %}<option {{ 'selected' if form.get('g%d_rel' % i) == r }}>{{ r }}</option>{% endfor %}</select></div>
+    <div><label>Phone</label><input type="tel" name="g{{ i }}_phone" value="{{ form.get('g%d_phone' % i, '') }}" placeholder="07…"></div>
+    <div><label>Email</label><input type="email" name="g{{ i }}_email" value="{{ form.get('g%d_email' % i, '') }}"></div>
+  </div>
+  {% endfor %}
+  <div style="margin-top:20px;"><button type="submit">Admit student</button></div>
+</form>
+<script>
+(function(){
+  const grade = document.getElementById('add-grade'), stream = document.getElementById('add-stream');
+  function sync(){
+    Array.from(stream.options).forEach(o => { if (!o.dataset.grade) return; const show = o.dataset.grade === grade.value; o.hidden = !show; o.disabled = !show; });
+    const cur = stream.options[stream.selectedIndex]; if (cur && cur.disabled) stream.value = '';
+  }
+  grade.addEventListener('change', sync); sync();
+})();
+</script>
+{% endblock %}

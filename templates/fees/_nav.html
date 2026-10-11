@@ -1,0 +1,8 @@
+<nav class="subnav">
+  {% set ep = request.endpoint %}
+  <a href="{{ url_for('fees.index') }}" class="{{ 'active' if ep == 'fees.index' else '' }}">Overview</a>
+  <a href="{{ url_for('fees.balances') }}" class="{{ 'active' if ep in ('fees.balances', 'fees.student') else '' }}">Balances</a>
+  <a href="{{ url_for('fees.payments') }}" class="{{ 'active' if ep == 'fees.payments' else '' }}">Payments</a>
+  <a href="{{ url_for('fees.mpesa') }}" class="{{ 'active' if ep.startswith('fees.mpesa') else '' }}">M-Pesa import</a>
+  <a href="{{ url_for('fees.structure') }}" class="{{ 'active' if ep == 'fees.structure' else '' }}">Fee structure</a>
+</nav>

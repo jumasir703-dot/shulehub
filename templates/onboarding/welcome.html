@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "onboarding/_rail.html" as rail %}
+{% block title %}Welcome{% endblock %}
+{% block content %}
+<div class="card setup-card" style="text-align:center;">
+  {{ rail.rail(steps, active_step) }}
+  <div class="welcome-mark" style="margin: 0 auto 18px;">{{ school.brand_mark or "TT" }}</div>
+  <h1>Welcome to {{ school.name or "your timetable" }}</h1>
+  <p class="section-note">
+    Let's get you set up. We'll add your teaching staff, then your subjects
+    — takes a couple of minutes, and you can always add or change things
+    later from the dashboard.
+  </p>
+  <div class="welcome-actions">
+    <a href="{{ url_for('onboarding.teachers') }}"><button>Get Started</button></a>
+  </div>
+  <form method="POST" action="{{ url_for('onboarding.skip') }}" style="margin-top:14px;">
+    <button type="submit" class="secondary" style="font-size:.85rem;">Skip setup — I'll add things myself</button>
+  </form>
+</div>
+{% endblock %}

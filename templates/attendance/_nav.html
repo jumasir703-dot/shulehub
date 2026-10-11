@@ -1,0 +1,5 @@
+<nav class="subnav">
+  <a href="{{ url_for('attendance.index') }}" class="{{ 'active' if request.endpoint == 'attendance.index' else '' }}">Today &amp; overview</a>
+  <a href="{{ url_for('attendance.mark') }}" class="{{ 'active' if request.endpoint == 'attendance.mark' else '' }}">Take register</a>
+  <a href="{{ url_for('attendance.report') }}" class="{{ 'active' if request.endpoint == 'attendance.report' else '' }}">Reports</a>
+</nav>

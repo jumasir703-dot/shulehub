@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Offline{% endblock %}
+{% block content %}
+<div class="card" style="text-align:center; padding:40px 20px;">
+  <h1>You're offline</h1>
+  <p class="section-note">
+    No connection right now, and this page hasn't been opened before on this
+    device, so there's nothing saved to show. Pages you've already viewed
+    while online (like a stream or teacher's timetable) will still open
+    without data.
+  </p>
+  <button onclick="location.reload()" style="margin-top:12px;">Try again</button>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Welcome, {{ user.full_name.split(' ')[0] }}</h1>
+<p class="section-note">Timetable, exam analysis and school management in one place.</p>
+<div class="module-grid">
+  {% if can('timetable_edit') or can('timetable_view') %}
+  <a class="module-card" href="{{ url_for('builder_page' if can('timetable_edit') else 'view_page') }}">
+    <span class="module-icon">▦</span>
+    <h2>Timetable</h2>
+    <p>Grades, streams, subjects, teachers and rooms — build and export class and teacher timetables from Pre-Primary through Senior School.</p>
+    <span class="module-go">{{ 'Open timetable' if can('timetable_edit') else 'View timetables' }} →</span>
+  </a>
+  {% endif %}
+  {% if can('exams') %}
+  <a class="module-card" href="{{ url_for('analytics.exams_page') }}">
+    <span class="module-icon">∑</span>
+    <h2>Exam Analysis</h2>
+    <p>Enter marks, rank students, analyse subjects and teachers, compare exams, and print report forms.</p>
+    <span class="module-go">Open exam analysis →</span>
+  </a>
+  {% endif %}
+  {% if can('students_view') %}
+  <a class="module-card" href="{{ url_for('school.students') }}">
+    <span class="module-icon">☗</span>
+    <h2>School Management</h2>
+    <p>Student records and guardians{% if can('attendance') %}, daily attendance{% endif %}{% if can('fees') %}, fees, M-Pesa payments and receipts{% endif %}{% if can('students_manage') %}, promotion{% endif %}{% if user.role == 'admin' %} and staff logins{% endif %}.</p>
+    <span class="module-go">Open school management →</span>
+  </a>
+  {% elif can('attendance') or can('fees') %}
+  <a class="module-card" href="{{ url_for('attendance.index' if can('attendance') else 'fees.index') }}">
+    <span class="module-icon">☗</span>
+    <h2>School Management</h2>
+    <p>{% if can('attendance') %}Daily attendance{% endif %}{% if can('attendance') and can('fees') %} and {% endif %}{% if can('fees') %}fees, M-Pesa payments and receipts{% endif %}.</p>
+    <span class="module-go">Open →</span>
+  </a>
+  {% endif %}
+</div>
+
+{% if today %}
+<div class="stat-row" style="margin-top:22px;">
+  {% if 'att_marked' in today %}
+  <a class="stat" href="{{ url_for('attendance.index') }}" style="text-decoration:none;color:inherit;"><span>Attendance today</span><strong>{{ today.att_pct if today.att_pct is not none else '—' }}{% if today.att_pct is not none %}<small>%</small>{% endif %}</strong></a>
+  <div class="stat"><span>Absent today</span><strong>{{ today.absent }}</strong></div>
+  {% endif %}
+  {% if 'owing' in today %}
+  <a class="stat" href="{{ url_for('fees.balances') }}" style="text-decoration:none;color:inherit;"><span>Fees outstanding</span><strong class="small-val {{ 'owes' if today.owing > 0 }}">KES {{ today.owing|kes }}</strong></a>
+  <div class="stat"><span>Collected this month</span><strong class="small-val">KES {{ today.month|kes }}</strong></div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if user.role == 'admin' %}
+<div class="card" style="margin-top:22px;">
+  <h3>At a glance</h3>
+  <div class="stat-row" style="margin:0;">
+    <div class="stat"><span>Grades</span><strong>{{ counts.grades }}</strong></div>
+    <div class="stat"><span>Streams</span><strong>{{ counts.streams }}</strong></div>
+    <div class="stat"><span>Teachers</span><strong>{{ counts.teachers }}</strong></div>
+    <div class="stat"><span>Students</span><strong>{{ counts.students }}</strong></div>
+    <div class="stat"><span>Exams</span><strong>{{ counts.exams }}</strong></div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

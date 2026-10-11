@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Day Structure{% endblock %}
+{% block content %}
+<h1>Day Structure</h1>
+
+<div class="card">
+  <p class="section-note">
+    Set the school day's start time, how long each lesson runs, how many
+    periods there are, and where the breaks fall. Saving regenerates every
+    period's time automatically — existing timetable entries are kept
+    wherever the period still exists; only periods you remove (by reducing
+    "periods per day") lose their entries.
+  </p>
+
+  <form method="post" action="{{ url_for('save_day_structure') }}" id="day-structure-form">
+    <div class="form-row">
+      <div>
+        <label>School day starts at</label>
+        <input type="time" name="start_time" value="{{ ds.start_time }}" required>
+      </div>
+      <div>
+        <label>Lesson length (minutes)</label>
+        <input type="number" name="lesson_minutes" min="10" max="120" value="{{ ds.lesson_minutes }}" required>
+      </div>
+      <div>
+        <label>Periods per day</label>
+        <input type="number" name="periods_per_day" id="periods-per-day-input" min="1" max="15"
+               value="{{ ds.periods_per_day }}" required>
+      </div>
+    </div>
+
+    <h4 style="margin-top:20px;">Breaks</h4>
+    <p class="section-note">Add as many breaks as you like — a short mid-morning break, a lunch break, whatever your school day needs.</p>
+
+    <div id="breaks-list">
+      {% for b in breaks %}
+      <div class="form-row break-row">
+        <div>
+          <label>After period</label>
+          <select name="after_period[]">
+            {% for p in range(1, ds.periods_per_day) %}
+              <option value="{{ p }}" {{ 'selected' if p == b.after_period }}>{{ p }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Duration (minutes)</label>
+          <input type="number" name="duration[]" min="1" max="120" value="{{ b.duration_minutes }}">
+        </div>
+        <div>
+          <label>Label</label>
+          <input type="text" name="label[]" value="{{ b.label or 'Break' }}">
+        </div>
+        <div style="flex:0;">
+          <label>&nbsp;</label>
+          <button type="button" class="secondary remove-break-btn">Remove</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <button type="button" id="add-break-btn" class="secondary" style="margin-top:8px;">+ Add Break</button>
+    <br><br>
+    <button type="submit">Save &amp; Regenerate Periods</button>
+  </form>
+</div>
+
+<script>
+  const breaksList = document.getElementById('breaks-list');
+  const addBreakBtn = document.getElementById('add-break-btn');
+  const periodsPerDayInput = document.getElementById('periods-per-day-input');
+
+  function periodOptionsHtml(selected){
+    const total = parseInt(periodsPerDayInput.value, 10) || 8;
+    let html = '';
+    for (let p = 1; p < total; p++){
+      html += `<option value="${p}" ${p === selected ? 'selected' : ''}>${p}</option>`;
+    }
+    return html;
+  }
+
+  function addBreakRow(){
+    const row = document.createElement('div');
+    row.className = 'form-row break-row';
+    row.innerHTML = `
+      <div>
+        <label>After period</label>
+        <select name="after_period[]">${periodOptionsHtml(1)}</select>
+      </div>
+      <div>
+        <label>Duration (minutes)</label>
+        <input type="number" name="duration[]" min="1" max="120" value="15">
+      </div>
+      <div>
+        <label>Label</label>
+        <input type="text" name="label[]" value="Break">
+      </div>
+      <div style="flex:0;">
+        <label>&nbsp;</label>
+        <button type="button" class="secondary remove-break-btn">Remove</button>
+      </div>
+    `;
+    breaksList.appendChild(row);
+  }
+
+  addBreakBtn.addEventListener('click', addBreakRow);
+
+  // Event delegation so "Remove" works for rows added dynamically too.
+  breaksList.addEventListener('click', (e) => {
+    if (e.target.classList.contains('remove-break-btn')){
+      e.target.closest('.break-row').remove();
+    }
+  });
+</script>
+{% endblock %}

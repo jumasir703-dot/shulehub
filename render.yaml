@@ -1,0 +1,40 @@
+# Render Blueprint — deploy this repo on Render with "New +" -> "Blueprint"
+# and pointing it at the repo containing this file.
+#
+# FREE-PLAN STRUCTURE
+# --------------------
+# Render's free web services have an ephemeral filesystem (no persistent
+# disk), so this blueprint does NOT rely on disk storage. Instead it pairs
+# the free web service with Render's free PostgreSQL database, and
+# database.py automatically switches to Postgres whenever DATABASE_URL is
+# present (which Render injects for you below via `fromDatabase`).
+#
+# Know the limits of the free Postgres database before you rely on it:
+#   - It expires 30 days after creation, with a 14-day grace period to
+#     upgrade before Render deletes it (and all its data).
+#   - No backups are included on the free tier.
+#   - 1GB storage / 256MB RAM — plenty for this app, not for scale.
+#   - The free web service itself spins down after 15 minutes of
+#     inactivity; the next request wakes it up in 30-60 seconds.
+# See README.md for what to do as the 30-day mark approaches.
+
+databases:
+  - name: timetable-db
+    plan: free
+    databaseName: timetable
+    user: timetable
+
+services:
+  - type: web
+    name: school-timetable
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: timetable-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true

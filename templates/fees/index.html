@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Fees & Payments{% endblock %}
+{% block content %}
+<h1>Fees &amp; Payments</h1>
+{% include "fees/_nav.html" %}
+
+{% if not has_items %}
+<div class="card callout">
+  <strong>Start here:</strong> set the fees for each grade under <a href="{{ url_for('fees.structure') }}">Fee structure</a>, then create the term's invoices. After that, record payments on a student's statement or import the M-Pesa Paybill statement.
+</div>
+{% endif %}
+
+<div class="stat-row">
+  <div class="stat"><span>Billed (all terms)</span><strong class="small-val">KES {{ billed|kes }}</strong></div>
+  <div class="stat"><span>Collected</span><strong class="small-val">KES {{ paid|kes }}</strong></div>
+  <div class="stat"><span>Outstanding</span><strong class="small-val {{ 'owes' if outstanding > 0 }}">KES {{ outstanding|kes }}</strong></div>
+  <div class="stat"><span>Families owing</span><strong>{{ n_owing }}</strong></div>
+  <div class="stat"><span>Collected this month</span><strong class="small-val">KES {{ month|kes }}</strong></div>
+</div>
+
+<div class="grid-even" style="margin-top:0;">
+  <div class="card">
+    <h3>By grade</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Grade</th><th class="money">Billed</th><th class="money">Collected</th><th class="money">Owing</th><th class="money">Students</th></tr></thead>
+      <tbody>
+      {% for g in by_grade %}<tr><td>{{ g.grade }}</td><td class="money">{{ g.billed|kes }}</td><td class="money">{{ g.paid|kes }}</td><td class="money {{ 'owes' if g.owing > 0 }}">{{ g.owing|kes }}</td><td class="money">{{ g.n_owing }}</td></tr>
+      {% else %}<tr><td colspan="5" class="section-note">No invoices yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h3>Latest payments</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Date</th><th>Student</th><th>Method</th><th class="money">KES</th></tr></thead>
+      <tbody>
+      {% for p in recent %}<tr><td>{{ p.paid_on }}</td><td><a href="{{ url_for('fees.student', student_id=p.sid) }}">{{ p.name }}</a></td><td>{{ p.method }}</td>
+        <td class="money">{% if p.voided %}<s class="section-note">{{ p.amount|kes }}</s>{% else %}{{ p.amount|kes }}{% endif %}</td></tr>
+      {% else %}<tr><td colspan="4" class="section-note">No payments recorded yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h3>Fee settings</h3>
+  <form method="post" action="{{ url_for('fees.settings_save') }}">
+    <div class="form-row" style="margin-top:6px;">
+      <div style="max-width:120px;"><label>Current term</label><select name="term">{% for t in (1,2,3) %}<option value="{{ t }}" {{ 'selected' if t == term }}>Term {{ t }}</option>{% endfor %}</select></div>
+      <div style="max-width:120px;"><label>Year</label><input type="number" name="year" value="{{ year }}" min="2000" max="2100"></div>
+      <div><label>M-Pesa Paybill number</label><input type="text" name="paybill" value="{{ paybill }}" placeholder="e.g. 123456"></div>
+      <div style="flex:2;"><label>Note printed on receipts &amp; statements</label><input type="text" name="note" value="{{ footer }}" maxlength="300" placeholder="e.g. Fees are non-refundable."></div>
+      <div style="flex:0;"><button type="submit">Save</button></div>
+    </div>
+  </form>
+</div>
+{% endblock %}

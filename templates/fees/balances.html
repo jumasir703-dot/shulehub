@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Fee balances{% endblock %}
+{% block content %}
+<h1>Fees &amp; Payments</h1>
+{% include "fees/_nav.html" %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Show</label><select name="view" onchange="this.form.submit()">
+      {% for k, label in (('owing','Owing'),('credit','In credit'),('cleared','Fully paid'),('all','Everyone')) %}<option value="{{ k }}" {{ 'selected' if view == k }}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label>Grade</label><select name="grade_id" onchange="document.getElementById('f-stream').value=''; this.form.submit()"><option value="">All</option>{% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if grade_id == g.id }}>{{ g.name }}</option>{% endfor %}</select></div>
+    <div><label>Stream</label><select name="stream_id" id="f-stream" onchange="this.form.submit()"><option value="">All</option>{% for s in streams if not grade_id or s.grade_id == grade_id %}<option value="{{ s.id }}" {{ 'selected' if stream_id == s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+    <div style="max-width:140px;"><label>At least (KES)</label><input type="number" name="min" min="0" value="{{ min_amount|int if min_amount else '' }}"></div>
+    <div><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Name or adm. no."></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Filter</button></div>
+    <div style="flex:0;"><a class="btn secondary" href="{{ url_for('fees.balances_csv', view=view, grade_id=grade_id, stream_id=stream_id, min=min_amount, q=q) }}">CSV</a></div>
+  </form>
+  <p class="section-note">{{ total }} student(s){{ ' — showing the first 500' if total > 500 }}{% if view == 'owing' %} · KES {{ owed|kes }} owed{% endif %}</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Adm</th><th>Name</th><th>Class</th><th class="money">Billed</th><th class="money">Paid</th><th class="money">Balance</th><th>Contact</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td class="section-note">{{ r.admission_no }}</td><td><a href="{{ url_for('fees.student', student_id=r.id) }}">{{ r.name }}</a>{% if r.status != 'active' %} <span class="badge off">{{ r.status }}</span>{% endif %}</td>
+        <td>{{ r.stream_name or r.grade_name }}</td><td class="money">{{ r.billed|kes }}</td><td class="money">{{ r.paid|kes }}</td>
+        <td class="money {{ 'owes' if r.balance > 0 else 'credit' if r.balance < 0 }}">{{ r.balance|kes }}</td>
+        <td>{% if r.phone %}<a href="tel:{{ r.phone }}">{{ r.phone }}</a>{% else %}<span class="section-note">—</span>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="7" class="section-note">Nobody matches.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

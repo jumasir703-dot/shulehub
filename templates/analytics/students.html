@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('analytics.exams_page') }}">← Exam Analysis</a>
+<h1>Students</h1>
+
+<div class="grid-even">
+  <div class="card">
+    <h3>Add a student</h3>
+    <form method="post" action="{{ url_for('analytics.student_add') }}">
+      <div class="form-row" style="margin-top:6px;">
+        <div><label>Admission no.</label><input type="text" name="admission_no" required></div>
+        <div style="flex:2;"><label>Full name</label><input type="text" name="name" required></div>
+      </div>
+      <div class="form-row">
+        <div><label>Grade</label>
+          <select name="grade_id" id="add-grade" required>
+            {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if grade_id == g.id }}>{{ g.name }}</option>{% endfor %}
+          </select></div>
+        <div><label>Stream</label>
+          <select name="stream_id" id="add-stream">
+            <option value="">(none)</option>
+            {% for s in streams %}<option value="{{ s.id }}" data-grade="{{ s.grade_id }}">{{ s.name }}</option>{% endfor %}
+          </select></div>
+        <div style="max-width:110px;"><label>Gender</label>
+          <select name="gender"><option value="">—</option><option>M</option><option>F</option></select></div>
+      </div>
+      <div style="margin-top:14px;"><button type="submit">Add student</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Import from CSV, Excel or PDF</h3>
+    <p class="section-note">Columns: <code>admission_no, name, gender, grade, stream</code>. Grade and stream names must match Grades &amp; Streams exactly.</p>
+    <form method="post" action="{{ url_for('analytics.students_import') }}" enctype="multipart/form-data" class="form-row">
+      <div><input type="file" name="file" accept=".csv,.xlsx,.xlsm,.pdf,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></div>
+      <div style="flex:0;"><button type="submit">Import</button></div>
+    </form>
+    <p style="margin-top:10px;"><a href="{{ url_for('analytics.students_template') }}">Download a sample file</a></p>
+  </div>
+</div>
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Grade</label>
+      <select name="grade_id" id="f-grade" onchange="document.getElementById('f-stream').value=''; this.form.submit()">
+        <option value="">All</option>
+        {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if grade_id == g.id }}>{{ g.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Stream</label>
+      <select name="stream_id" id="f-stream" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for s in streams if not grade_id or s.grade_id == grade_id %}<option value="{{ s.id }}" {{ 'selected' if stream_id == s.id }}>{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Name or admission no."></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Filter</button></div>
+  </form>
+  <p class="section-note">{{ total }} student(s){{ ' — showing the first 500' if total > 500 }}</p>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Adm no.</th><th>Name</th><th>Gender</th><th>Grade</th><th>Stream</th></tr></thead>
+    <tbody>
+    {% for s in students %}
+      <tr><td>{{ s.admission_no }}</td><td><a href="{{ url_for('analytics.student_profile', student_id=s.id) }}">{{ s.name }}</a></td>
+          <td>{{ s.gender or '—' }}</td><td>{{ s.grade_name }}</td><td>{{ s.stream_name or '—' }}</td></tr>
+    {% else %}<tr><td colspan="5" class="section-note">No students match.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Only offer the streams that belong to the grade chosen in the add form.
+  const grade = document.getElementById('add-grade');
+  const stream = document.getElementById('add-stream');
+  function sync(){
+    Array.from(stream.options).forEach(o => {
+      if (!o.dataset.grade) return;
+      const show = o.dataset.grade === grade.value;
+      o.hidden = !show; o.disabled = !show;
+    });
+    const cur = stream.options[stream.selectedIndex];
+    if (cur && cur.disabled) stream.value = '';
+  }
+  grade.addEventListener('change', sync); sync();
+})();
+</script>
+{% endblock %}

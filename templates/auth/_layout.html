@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Sign in{% endblock %} · {{ school.name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<meta name="theme-color" content="#103524">
+<link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="brand-line">
+      {% if school.has_logo %}<img class="brand-logo" src="{{ url_for('logo_image', v=school.logo_version) }}" alt="">{% else %}<span class="brand-mark">{{ school.brand_mark }}</span>{% endif %}
+      <div><strong>{{ school.name }}</strong><br><span class="section-note">{{ school.tagline }}</span></div>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}<div class="flash flash-{{ category }}" style="margin-bottom:10px;">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+  </div>
+</div>
+</body>
+</html>

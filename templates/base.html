@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Timetable{% endblock %} · {{ school.name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<!-- PWA: installable "app" support -->
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<meta name="theme-color" content="#103524">
+{% if user %}<meta name="csrf-token" content="{{ csrf_token() }}">{% endif %}
+<link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="{{ school.name }}">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      {% if school.has_logo %}<img class="brand-logo" src="{{ url_for('logo_image', v=school.logo_version) }}" alt="{{ school.name }} logo">{% else %}<span class="brand-mark">{{ school.brand_mark }}</span>{% endif %}
+      <div class="brand-text">
+        <strong>{{ school.name }}</strong>
+        <span>{{ school.tagline }}</span>
+      </div>
+    </div>
+    <nav class="menu">
+      <button type="button" class="menu-toggle" id="menu-toggle" aria-haspopup="true" aria-expanded="false">
+        <span>Menu</span>
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="menu-panel" id="menu-panel">
+        {% set ep = request.endpoint or '' %}
+        {% set role = user.role if user else '' %}
+        <a href="{{ url_for('home') }}" class="{{ 'active' if ep=='home' else '' }}">Home</a>
+        <a href="{{ url_for('guide_page') }}" class="{{ 'active' if ep=='guide_page' else '' }}">Quick-Start Guide</a>
+        {% if role == 'admin' %}
+        <a href="{{ url_for('onboarding.welcome') }}" class="{{ 'active' if ep.startswith('onboarding.') else '' }}">Setup Wizard</a>
+        <a href="{{ url_for('settings_page') }}" class="{{ 'active' if ep=='settings_page' else '' }}">School Settings</a>
+        {% endif %}
+
+        {% if can('timetable_edit') or can('timetable_view') %}
+        <div class="menu-sep">Timetable</div>
+        {% if can('timetable_edit') %}
+        <a href="{{ url_for('grades_page') }}" class="{{ 'active' if ep=='grades_page' else '' }}">Grades &amp; Streams</a>
+        <a href="{{ url_for('subjects_page') }}" class="{{ 'active' if ep=='subjects_page' else '' }}">Subjects</a>
+        <a href="{{ url_for('teachers_page') }}" class="{{ 'active' if ep=='teachers_page' else '' }}">Teachers</a>
+        <a href="{{ url_for('rooms_page') }}" class="{{ 'active' if ep=='rooms_page' else '' }}">Rooms</a>
+        <a href="{{ url_for('day_structure_page') }}" class="{{ 'active' if ep=='day_structure_page' else '' }}">Day Structure</a>
+        <a href="{{ url_for('builder_page') }}" class="{{ 'active' if ep=='builder_page' else '' }}">Timetable Builder</a>
+        {% endif %}
+        {% if can('timetable_view') %}
+        <a href="{{ url_for('view_page') }}" class="{{ 'active' if ep=='view_page' else '' }}">View / Export</a>
+        {% endif %}
+        {% if can('timetable_edit') %}
+        <a href="{{ url_for('rules_page') }}" class="{{ 'active' if ep=='rules_page' else '' }}">Scheduling Rules</a>
+        {% endif %}
+        {% endif %}
+
+        {% if can('exams') or can('exams_admin') %}
+        <div class="menu-sep">Exam Analysis</div>
+        {% if can('exams') %}
+        <a href="{{ url_for('analytics.exams_page') }}" class="{{ 'active' if ep.startswith('analytics.') and ep not in ('analytics.students_page','analytics.student_profile','analytics.grading_page','analytics.compare_page') else '' }}">Exams</a>
+        <a href="{{ url_for('analytics.compare_page') }}" class="{{ 'active' if ep == 'analytics.compare_page' else '' }}">Compare Exams</a>
+        {% endif %}
+        {% if can('exams_admin') %}
+        <a href="{{ url_for('analytics.grading_page') }}" class="{{ 'active' if ep == 'analytics.grading_page' else '' }}">Grading Scales</a>
+        {% endif %}
+        {% endif %}
+
+        {% if can('students_view') or can('students_manage') or can('attendance') or can('fees') or role == 'admin' %}
+        <div class="menu-sep">School Management</div>
+        {% if can('students_view') %}
+        <a href="{{ url_for('school.students') }}" class="{{ 'active' if ep.startswith('school.') and ep != 'school.promote' else '' }}">Students &amp; Guardians</a>
+        {% endif %}
+        {% if can('students_manage') %}
+        <a href="{{ url_for('school.promote') }}" class="{{ 'active' if ep == 'school.promote' else '' }}">Promotion</a>
+        {% endif %}
+        {% if can('attendance') %}
+        <a href="{{ url_for('attendance.index') }}" class="{{ 'active' if ep.startswith('attendance.') else '' }}">Attendance</a>
+        {% endif %}
+        {% if can('fees') %}
+        <a href="{{ url_for('fees.index') }}" class="{{ 'active' if ep.startswith('fees.') else '' }}">Fees &amp; Payments</a>
+        {% endif %}
+        {% if role == 'admin' %}
+        <a href="{{ url_for('auth.staff') }}" class="{{ 'active' if ep == 'auth.staff' else '' }}">Staff &amp; Logins</a>
+        <a href="{{ url_for('auth.roles_page') }}" class="{{ 'active' if ep.startswith('auth.role') else '' }}">Roles &amp; Access</a>
+        {% endif %}
+        {% endif %}
+
+        {% if user %}
+        <div class="menu-sep">{{ user.full_name }} · {{ ROLES[user.role] }}</div>
+        <a href="{{ url_for('auth.account') }}" class="{{ 'active' if ep == 'auth.account' else '' }}">My Account</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="menu-logout" onsubmit="try{caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})})}catch(e){}">
+          <button type="submit" class="menu-link-btn">Log out</button>
+        </form>
+        {% endif %}
+      </div>
+    </nav>
+  </header>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-wrap">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script>
+  // The PWA service worker is only useful for the web-hosted version — it
+  // caches pages and falls back to /offline when a real network fetch()
+  // fails. In the offline desktop build (run_desktop.py sets
+  // `desktop_mode`), that fetch() is to our own local server, but
+  // Windows/Chrome will still refuse the request while it thinks there's
+  // no network adapter up, which made the app wrongly show /offline
+  // whenever wifi was off. So: never register it in desktop mode, and
+  // clean up any copy a previous run may have already installed.
+  if ('serviceWorker' in navigator) {
+    {% if desktop_mode %}
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.unregister());
+      });
+    {% else %}
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+      });
+    {% endif %}
+  }
+
+  // Single consolidated menu: click to open, click outside or pick a link to close.
+  (function(){
+    const toggle = document.getElementById('menu-toggle');
+    const panel = document.getElementById('menu-panel');
+    if (!toggle || !panel) return;
+
+    function closeMenu(){
+      panel.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+    function openMenu(){
+      panel.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+    }
+
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.contains('open') ? closeMenu() : openMenu();
+    });
+    document.addEventListener('click', (e) => {
+      if (!panel.contains(e.target) && e.target !== toggle) closeMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
+  })();
+</script>
+<script src="{{ url_for('static', filename='csrf.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Promotion{% endblock %}
+{% block content %}
+<h1>Promotion</h1>
+<p class="section-note">Move a class up at the end of the year. Old exam results stay with the grade they were sat in, and fee balances carry over.</p>
+
+<div class="card" style="margin-top:18px;">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div style="max-width:320px;"><label>Grade to promote from</label>
+      <select name="grade_id" onchange="this.form.submit()">
+        <option value="">Choose…</option>
+        {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if src and src.id == g.id }}>{{ g.name }}</option>{% endfor %}
+      </select></div>
+  </form>
+</div>
+
+{% if src %}
+<form method="post" class="card" onsubmit="return confirm('Apply these changes to {{ students|length }} student(s)? Promotions can be undone only by editing each student.')">
+  <input type="hidden" name="grade_id" value="{{ src.id }}">
+  <h3>{{ src.name }} → <select name="target_grade_id" id="target-grade" style="width:auto;display:inline-block;">
+      <option value="">(no next grade — graduate)</option>
+      {% for g in grades if g.id != src.id %}<option value="{{ g.id }}" {{ 'selected' if target and target.id == g.id }}>{{ g.name }}</option>{% endfor %}
+  </select></h3>
+
+  {% if src_streams %}
+  <p class="section-note">Which stream does each class move into?</p>
+  <div class="form-row">
+    {% for s in src_streams %}
+    <div><label>{{ s.name }} →</label>
+      <select name="map_{{ s.id }}" class="map-stream">
+        <option value="">(no stream)</option>
+        {% for t in all_streams if t.grade_id != src.id %}<option value="{{ t.id }}" data-grade="{{ t.grade_id }}" {{ 'selected' if suggestions.get(s.id) == t.id }}>{{ t.name }}</option>{% endfor %}
+      </select></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="inline-actions" style="margin:16px 0 8px;">
+    <span class="section-note">Set everyone to:</span>
+    {% for k, label in actions %}<button type="button" class="small secondary set-all" data-act="{{ k }}">{{ label }}</button>{% endfor %}
+  </div>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Adm no.</th><th>Name</th><th>Stream</th><th>Outcome</th></tr></thead>
+    <tbody>
+    {% for s in students %}
+      <tr><td>{{ s.admission_no }}</td><td>{{ s.name }}</td><td>{{ s.stream_name or '—' }}</td>
+        <td><select name="act_{{ s.id }}" class="act" style="min-width:140px;">
+          {% for k, label in actions %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></td></tr>
+    {% else %}<tr><td colspan="4" class="section-note">No active students in {{ src.name }}.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if students %}<div style="margin-top:16px;"><button type="submit">Apply to {{ students|length }} student(s)</button></div>{% endif %}
+</form>
+<script>
+(function(){
+  document.querySelectorAll('.set-all').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('select.act').forEach(s => s.value = b.dataset.act);
+  }));
+  const target = document.getElementById('target-grade');
+  function sync(){
+    document.querySelectorAll('select.map-stream').forEach(sel => {
+      Array.from(sel.options).forEach(o => { if (!o.dataset.grade) return; const show = o.dataset.grade === target.value; o.hidden = !show; o.disabled = !show; });
+      const cur = sel.options[sel.selectedIndex]; if (cur && cur.disabled) sel.value = '';
+    });
+  }
+  target.addEventListener('change', sync); sync();
+})();
+</script>
+{% endif %}
+{% endblock %}

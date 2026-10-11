@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Quick-Start Guide{% endblock %}
+{% block content %}
+<h1>Quick-Start Guide</h1>
+<p class="section-note">A walkthrough of the main steps to set up and use your school's timetable.</p>
+
+<div class="card">
+
+  <div class="guide-step">
+    <div>
+      <h3><span class="guide-step-num">1</span>Grades &amp; Streams</h3>
+      <p>Pick a grade from the dropdown to see its streams. Add a stream name (e.g. "Grade 10 East") and, if it applies, a pathway — Arts &amp; Sports Science, STEM, or Social Sciences under the CBC senior school structure.</p>
+    </div>
+    <img src="{{ url_for('static', filename='screenshots/grades.jpg') }}" alt="Grades and streams page">
+  </div>
+
+  <div class="guide-step">
+    <div>
+      <h3><span class="guide-step-num">2</span>Teachers</h3>
+      <p>Choose a teacher from the dropdown to view or edit their details, or add a new teacher with their name and rank. This is also where you'll assign which subjects and streams each teacher handles.</p>
+    </div>
+    <img src="{{ url_for('static', filename='screenshots/teachers.jpg') }}" alt="Teachers page">
+  </div>
+
+  <div class="guide-step">
+    <div>
+      <h3><span class="guide-step-num">3</span>Timetable Builder</h3>
+      <p>With grades, subjects, teachers, rooms, and your day structure all set up, use the builder to lay out lessons across the week — either by placing them yourself or letting the auto-scheduler fill the grid while respecting your scheduling rules.</p>
+    </div>
+    <img src="{{ url_for('static', filename='screenshots/builder.jpg') }}" alt="Timetable builder page">
+  </div>
+
+  <div class="guide-step">
+    <div>
+      <h3><span class="guide-step-num">4</span>View / Export</h3>
+      <p>Once a timetable is built, view it by stream, teacher, or room. From here you can export to CSV for a spreadsheet, or download a print-ready PDF to post on a notice board.</p>
+    </div>
+    <img src="{{ url_for('static', filename='screenshots/view.jpg') }}" alt="View and export page">
+  </div>
+
+</div>
+
+<div class="card">
+  <h3>The full setup order, if you're starting from scratch</h3>
+  <ol style="padding-left: 20px; line-height: 1.9;">
+    <li><strong>School Settings</strong> — name, tagline, and which weekdays you teach</li>
+    <li><strong>Grades &amp; Streams</strong> — confirm your grades and add each stream</li>
+    <li><strong>Subjects</strong> — list what's taught</li>
+    <li><strong>Teachers</strong> — add staff and what they teach</li>
+    <li><strong>Rooms</strong> — the physical spaces available</li>
+    <li><strong>Day Structure</strong> — your periods, times, and breaks</li>
+    <li><strong>Scheduling Rules</strong> — any constraints the builder should respect</li>
+    <li><strong>Timetable Builder</strong> — lay out the actual lessons</li>
+    <li><strong>View / Export</strong> — check it over and share it</li>
+  </ol>
+</div>
+
+<div style="text-align:center; margin-top: 24px;">
+  <a href="{{ url_for('grades_page') }}"><button>Go to Dashboard</button></a>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h3>New: more classes &amp; Exam Analysis</h3>
+  <p><strong>More classes.</strong> Lower Primary (Grades 1–3) and Junior Secondary (Grades 7–9) are now built in, each with its standard CBC subjects. On <em>Grades &amp; Streams</em> you can add any other grade (Pre-Primary, Upper Primary…) or delete ones you don't run. Add a stream for each class you actually have.</p>
+  <p><strong>Exam Analysis</strong> (Menu → Exam Analysis):</p>
+  <ol>
+    <li><strong>Students</strong> — add them one by one or import a CSV (admission_no, name, gender, grade, stream).</li>
+    <li><strong>New exam</strong> — pick the grade(s), term and year. All subjects are included; trim them under <em>Setup</em>.</li>
+    <li><strong>Enter marks</strong> — type into the class grid, or download the CSV template, fill it in Excel and upload it. Leave a box blank when a student doesn't take a subject.</li>
+    <li><strong>Read the results</strong> — overview, merit list (CSV/PDF), subject and teacher analysis, stream comparison, and one-page report forms for every student.</li>
+    <li><strong>Compare exams</strong> to see which subjects and students improved or dropped.</li>
+  </ol>
+  <p class="section-note">Grading follows the CBC 8-level scale (EE1–BE2) for CBC grades and A–E (12 points) for 8-4-4. Boundaries are editable under <em>Grading Scales</em>.</p>
+</div>
+{% endblock %}
+

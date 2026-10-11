@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}New exam{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('analytics.exams_page') }}">← All exams</a>
+<h1>New exam</h1>
+<p class="section-note">Tick several grades to set the same exam for each of them at once — every grade gets its own marks and ranking.</p>
+<div class="card" style="max-width:720px;">
+  <form method="post">
+    <div class="form-row" style="margin-top:0;">
+      <div style="flex:2;"><label>Exam name</label><input type="text" name="name" placeholder="e.g. Mid-Term 1, End of Term 2" required></div>
+      <div><label>Term</label>
+        <select name="term"><option>1</option><option>2</option><option>3</option></select></div>
+      <div><label>Year</label><input type="number" name="year" value="{{ this_year }}" min="2000" max="2100"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Exam date (optional)</label><input type="text" name="exam_date" placeholder="e.g. 2026-06-12"></div>
+      <div><label>Each subject marked out of</label><input type="number" name="out_of" value="100" min="1" max="1000"></div>
+    </div>
+    <label style="margin-top:18px;">Grades sitting this exam</label>
+    <div class="check-grid">
+      {% for g in grades %}
+        <label class="check"><input type="checkbox" name="grade_ids" value="{{ g.id }}"> {{ g.name }}</label>
+      {% endfor %}
+    </div>
+    <p class="section-note">All of a grade's subjects are included by default; you can remove subjects or change each “out of” afterwards under Setup.</p>
+    <div style="margin-top:18px;"><button type="submit">Create exam</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Payments{% endblock %}
+{% block content %}
+<h1>Fees &amp; Payments</h1>
+{% include "fees/_nav.html" %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>From</label><input type="date" name="from" value="{{ start }}"></div>
+    <div><label>To</label><input type="date" name="to" value="{{ end }}"></div>
+    <div><label>Method</label><select name="method"><option value="">All</option>{% for m in methods %}<option {{ 'selected' if method == m }}>{{ m }}</option>{% endfor %}</select></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Show</button></div>
+    <div style="flex:0;"><a class="btn secondary" href="{{ url_for('fees.payments_csv', **{'from': start, 'to': end, 'method': method}) }}">CSV</a></div>
+  </form>
+  <p class="section-note">{{ total }} payment(s) · <strong>KES {{ collected|kes }}</strong> collected{% for m, v in by_method.items() %} · {{ m }} {{ v|kes }}{% endfor %}</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Date</th><th>Receipt</th><th>Student</th><th>Method</th><th>Reference</th><th class="money">KES</th><th>By</th></tr></thead>
+    <tbody>
+    {% for p in rows %}
+      <tr><td>{{ p.paid_on }}</td><td><a target="_blank" href="{{ url_for('fees.receipt_pdf', payment_id=p.id) }}">{{ p.receipt_no }}</a></td>
+        <td><a href="{{ url_for('fees.student', student_id=p.student_id) }}">{{ p.name }}</a> <span class="section-note">{{ p.admission_no }}</span></td>
+        <td>{{ p.method }}</td><td>{{ p.reference or '' }}</td>
+        <td class="money">{% if p.voided %}<s class="section-note">{{ p.amount|kes }}</s> <span class="badge bad">void</span>{% else %}{{ p.amount|kes }}{% endif %}</td>
+        <td class="section-note">{{ p.received_by or '' }}</td></tr>
+    {% else %}<tr><td colspan="7" class="section-note">No payments in this period.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

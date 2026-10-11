@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Compare exams{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('analytics.exams_page') }}">← All exams</a>
+<h1>Compare exams</h1>
+<p class="section-note">See which subjects and students moved between two exams of the same grade.</p>
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Earlier exam (A)</label>
+      <select name="a" required><option value="">Choose…</option>
+        {% for e in exams %}<option value="{{ e.id }}" {{ 'selected' if a == e.id }}>{{ e.grade_name }} · {{ e.name }} (T{{ e.term }} {{ e.year }})</option>{% endfor %}
+      </select></div>
+    <div><label>Later exam (B)</label>
+      <select name="b" required><option value="">Choose…</option>
+        {% for e in exams %}<option value="{{ e.id }}" {{ 'selected' if b == e.id }}>{{ e.grade_name }} · {{ e.name }} (T{{ e.term }} {{ e.year }})</option>{% endfor %}
+      </select></div>
+    <div style="flex:0;"><button type="submit">Compare</button></div>
+  </form>
+</div>
+
+{% if result %}
+<div class="stat-row">
+  <div class="stat"><span>{{ res_a.exam.name }}</span><strong>{{ result.grade_mean_a|pct }}<small>% mean</small></strong></div>
+  <div class="stat"><span>{{ res_b.exam.name }}</span><strong>{{ result.grade_mean_b|pct }}<small>% mean</small></strong></div>
+  <div class="stat"><span>Change</span>
+    <strong class="{{ 'up' if (result.grade_mean_b - result.grade_mean_a) > 0 else 'down' }}">{{ (result.grade_mean_b - result.grade_mean_a)|round(2)|signed }}</strong></div>
+</div>
+
+<div class="card">
+  <h3>Subject movement</h3>
+  <table>
+    <thead><tr><th>Subject</th><th class="num">A mean %</th><th class="num">B mean %</th><th class="num">Change</th></tr></thead>
+    <tbody>
+    {% for s in result.subjects %}
+      <tr><td>{{ s.name }}</td><td class="num">{{ s.mean_a|pct }} <span class="chip {{ s.label_a|lvl }}">{{ s.label_a }}</span></td>
+          <td class="num">{{ s.mean_b|pct }} <span class="chip {{ s.label_b|lvl }}">{{ s.label_b }}</span></td>
+          <td class="num {{ 'up' if s.deviation > 0 else ('down' if s.deviation < 0 else '') }}"><strong>{{ s.deviation|signed }}</strong></td></tr>
+    {% else %}<tr><td colspan="4" class="section-note">No subjects have marks in both exams.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="grid-even">
+  <div class="card">
+    <h3>Most improved</h3>
+    <table>
+      <thead><tr><th>Student</th><th class="num">A → B</th><th class="num">Change</th><th class="num">Position</th></tr></thead>
+      <tbody>
+      {% for s in result.students[:8] if s.deviation > 0 %}
+        <tr><td><a href="{{ url_for('analytics.student_profile', student_id=s.id) }}">{{ s.name }}</a></td>
+            <td class="num">{{ s.mean_a|pct }} → {{ s.mean_b|pct }}</td>
+            <td class="num up"><strong>{{ s.deviation|signed }}</strong></td>
+            <td class="num">{{ s.pos_a }} → {{ s.pos_b }}</td></tr>
+      {% else %}<tr><td colspan="4" class="section-note">Nobody improved.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Needs attention (biggest drops)</h3>
+    <table>
+      <thead><tr><th>Student</th><th class="num">A → B</th><th class="num">Change</th><th class="num">Position</th></tr></thead>
+      <tbody>
+      {% for s in (result.students|reverse|list)[:8] if s.deviation < 0 %}
+        <tr><td><a href="{{ url_for('analytics.student_profile', student_id=s.id) }}">{{ s.name }}</a></td>
+            <td class="num">{{ s.mean_a|pct }} → {{ s.mean_b|pct }}</td>
+            <td class="num down"><strong>{{ s.deviation|signed }}</strong></td>
+            <td class="num">{{ s.pos_a }} → {{ s.pos_b }}</td></tr>
+      {% else %}<tr><td colspan="4" class="section-note">Nobody dropped.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

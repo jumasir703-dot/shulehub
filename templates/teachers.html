@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Teachers{% endblock %}
+{% block content %}
+<h1>Teachers</h1>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>All teachers</h3>
+    <div class="select-nav">
+      <label for="teacher-nav">Choose a teacher</label>
+      <select id="teacher-nav" onchange="if(this.value) location.href=this.value;">
+        <option value="">— choose —</option>
+        {% for t in teachers %}
+          <option value="{{ url_for('teachers_page', teacher_id=t.id) }}" {{ 'selected' if t.id == selected_id }}>{{ t.name }} ({{ '#' + t.rank|string if t.rank is not none else 'no rank' }})</option>
+        {% else %}
+          <option value="">No teachers yet</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <form method="post" action="{{ url_for('add_teacher') }}" style="margin-top:16px;">
+      <div class="form-row" style="margin-top:0;">
+        <div>
+          <label>Name</label>
+          <input type="text" name="name" required>
+        </div>
+        <div>
+          <label>Email</label>
+          <input type="email" name="email">
+        </div>
+        <div style="flex:0; min-width:100px;">
+          <label>Rank</label>
+          <input type="number" name="rank" min="1" placeholder="e.g. 1">
+        </div>
+        <div style="flex:0;">
+          <label>&nbsp;</label>
+          <button type="submit">Add Teacher</button>
+        </div>
+      </div>
+      <p class="section-note">Rank is a seniority number you assign yourself — e.g. Principal = 1, Deputy = 2. Lower numbers sort first. Leave blank if not needed.</p>
+    </form>
+
+    {% if selected_id %}
+    <form method="post" action="{{ url_for('delete_teacher', teacher_id=selected_id) }}"
+          onsubmit="return confirm('Delete this teacher?');" style="margin-top:14px;">
+      <button type="submit" class="danger">Delete Selected Teacher</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div>
+  <div class="card">
+    <h3>Teacher details</h3>
+    {% if not selected_id or not selected_teacher %}
+      <p class="section-note">Select a teacher on the left to edit their details.</p>
+    {% else %}
+      <form method="post" action="{{ url_for('update_teacher', teacher_id=selected_id) }}">
+        <div class="form-row" style="margin-top:0;">
+          <div>
+            <label>Name</label>
+            <input type="text" name="name" value="{{ selected_teacher.name }}" required>
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" value="{{ selected_teacher.email or '' }}">
+          </div>
+          <div style="flex:0; min-width:100px;">
+            <label>Rank</label>
+            <input type="number" name="rank" min="1" value="{{ selected_teacher.rank if selected_teacher.rank is not none else '' }}" placeholder="e.g. 1">
+          </div>
+        </div>
+        <button type="submit" style="margin-top:12px;">Save Details</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:18px;">
+    <h3>Subjects this teacher can teach</h3>
+    {% if not selected_id %}
+      <p class="section-note">Select a teacher on the left to assign subjects.</p>
+    {% else %}
+      <form method="post" action="{{ url_for('save_teacher_subjects', teacher_id=selected_id) }}">
+        <div style="max-height: 420px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:10px;">
+          {% for s in all_subjects %}
+            <label style="display:flex; align-items:center; gap:8px; font-size:.88rem; color: var(--ink); margin-bottom:6px;">
+              <input type="checkbox" name="subject_ids" value="{{ s.id }}" {{ 'checked' if s.id in assigned_ids }}>
+              {{ s.name }} <span class="section-note" style="margin:0;">({{ s.grade_name }})</span>
+            </label>
+          {% endfor %}
+        </div>
+        <button type="submit" style="margin-top:12px;">Save Subject Assignments</button>
+      </form>
+    {% endif %}
+  </div>
+  </div>
+</div>
+{% endblock %}
