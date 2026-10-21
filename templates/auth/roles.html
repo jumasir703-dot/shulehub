@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Roles & Access{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Roles &amp; Access</h1>
+    <p class="section-note">Choose which services each role can use. Give a person a role on the <a href="{{ url_for('auth.staff') }}">Staff &amp; Logins</a> page and they will only see — and only be able to open — the services ticked here. Changes apply the next time they open a page.</p>
+  </div>
+  <div class="head-actions"><a class="btn secondary" href="{{ url_for('auth.staff') }}">← Staff &amp; Logins</a></div>
+</div>
+
+<div class="card">
+  <h3>New role</h3>
+  <p class="section-note">For example: Deputy Principal, Secretary, Exams Officer, Class Teacher.</p>
+  <form method="post" action="{{ url_for('auth.role_add') }}">
+    <div class="form-row"><div style="max-width:340px;"><label>Role name</label><input type="text" name="name" maxlength="40" required placeholder="e.g. Deputy Principal"></div></div>
+    <div class="svc-grid">
+      {% for key, label, desc in services %}
+      <label class="svc"><input type="checkbox" name="services" value="{{ key }}"><span><strong>{{ label }}</strong><small>{{ desc }}</small></span></label>
+      {% endfor %}
+    </div>
+    <div style="margin-top:14px;"><button type="submit">Create role</button></div>
+  </form>
+</div>
+
+{% for r in roles %}
+<div class="card">
+  <div class="page-head" style="margin-bottom:6px;">
+    <h3 style="margin:0;">{{ r.name }}
+      {% if r.key == 'admin' %}<span class="badge ok">full access</span>{% elif r.builtin %}<span class="badge">built in</span>{% endif %}
+    </h3>
+    <span class="section-note">{{ counts.get(r.key, 0) }} {{ 'person' if counts.get(r.key, 0) == 1 else 'people' }}</span>
+  </div>
+
+  {% if r.key == 'admin' %}
+  <p class="section-note">Administrators can use every service, plus School Settings, the Setup Wizard, Staff &amp; Logins and this page. This role can't be changed or removed.</p>
+  {% else %}
+  <form method="post" action="{{ url_for('auth.role_save', role_key=r.key) }}">
+    <div class="form-row"><div style="max-width:340px;"><label>Role name</label><input type="text" name="name" value="{{ r.name }}" maxlength="40" required></div></div>
+    <div class="svc-grid">
+      {% for key, label, desc in services %}
+      <label class="svc"><input type="checkbox" name="services" value="{{ key }}" {{ 'checked' if key in r.services }}><span><strong>{{ label }}</strong><small>{{ desc }}</small></span></label>
+      {% endfor %}
+    </div>
+    <div class="inline-actions" style="margin-top:14px;">
+      <button type="submit">Save access</button>
+    </div>
+  </form>
+  {% if not r.builtin %}
+  <form method="post" action="{{ url_for('auth.role_delete', role_key=r.key) }}" class="inline-form" style="margin-top:8px;" onsubmit="return confirm('Delete the role {{ r.name|e }}?')">
+    <button class="small secondary" type="submit" {{ 'disabled title="Move its people to another role first"' if counts.get(r.key, 0) }}>Delete role</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+{% endfor %}
+
+<p class="section-note">School Settings, the Setup Wizard, Staff &amp; Logins and Roles &amp; Access always stay with Administrators.</p>
+{% endblock %}

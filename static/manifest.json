@@ -1,0 +1,16 @@
+{
+  "name": "ShuleHub",
+  "short_name": "ShuleHub",
+  "description": "ShuleHub — timetable, exam analysis and school management in one place",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f6f2e9",
+  "theme_color": "#103524",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

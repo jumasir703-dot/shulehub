@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}My Marks{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>My Marks</h1>
+    <p class="section-note">Enter marks for the subjects and classes allocated to you. Save as often as you like, then <strong>submit</strong> when a sheet is final — the office compiles the results from everyone's submitted sheets.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn secondary" href="{{ url_for('mymarks.published') }}">Published results{% if n_published %} ({{ n_published }}){% endif %}</a>
+  </div>
+</div>
+
+{% if not linked %}
+<div class="card callout">
+  <strong>Your login isn't linked to a teacher record yet.</strong>
+  <p class="section-note">The administrator needs to choose your name in the “Teacher” box next to your login on the Staff &amp; Logins page. After that, your subjects will appear here.</p>
+</div>
+{% elif not groups %}
+<div class="card callout">
+  <strong>No mark sheets are waiting for you.</strong>
+  <p class="section-note">Either no exam is open for marking at the moment, or no subjects have been allocated to you yet. If you expected to see something here, ask the administrator to check the Subject Allocations page.</p>
+</div>
+{% else %}
+{% for exam, sheets in groups %}
+<div class="card">
+  <h3>{{ exam.name }} <span class="section-note">· {{ exam.grade_name }} · Term {{ exam.term }}, {{ exam.year }}</span></h3>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Subject</th><th>Class</th><th>Marks entered</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for s in sheets %}
+      <tr>
+        <td><strong>{{ s.subject_name }}</strong> <span class="section-note">out of {{ s.out_of }}</span></td>
+        <td>{{ s.stream_name }}</td>
+        <td>{{ s.n_entered }} / {{ s.n_students }}
+          <span class="meter"><i style="width: {{ (100 * s.n_entered / s.n_students)|round|int if s.n_students else 0 }}%"></i></span></td>
+        <td><span class="badge {{ 'ok' if s.status == 'submitted' else ('warn' if s.status == 'in_progress' else 'off') }}">{{ STATUS_LABEL[s.status] }}</span></td>
+        <td style="text-align:right;">
+          <a class="btn {{ 'secondary' if s.status == 'submitted' else '' }}" href="{{ sheet_url(s) }}">{{ 'View' if s.status == 'submitted' else 'Enter marks' }}</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

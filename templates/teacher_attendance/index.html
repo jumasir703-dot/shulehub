@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Teacher attendance{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Teacher attendance</h1>
+  <p class="muted">Mark each teacher for the day. Leave a row unmarked to clear it. Lessons are taken from the timetable.</p>
+</div>
+
+<section class="card">
+  <div class="toolbar">
+    <a class="btn" href="{{ url_for('teacher_attendance.index', date=prev_day) }}">← Previous day</a>
+    <form method="get" action="{{ url_for('teacher_attendance.index') }}" style="display:inline">
+      <input type="date" name="date" value="{{ d.isoformat() }}" onchange="this.form.submit()">
+    </form>
+    <a class="btn" href="{{ url_for('teacher_attendance.index', date=next_day) }}">Next day →</a>
+    <a class="btn" href="{{ url_for('teacher_attendance.index', date=today) }}">Today</a>
+    <span class="spacer"></span>
+    <a class="btn" href="{{ url_for('teacher_attendance.report') }}">Reports</a>
+  </div>
+  <p><strong>{{ d.strftime('%A %d %B %Y') }}</strong> —
+    {% for s, label in statuses %}{{ label }}: <strong>{{ tally[s] }}</strong> · {% endfor %}
+    Unmarked: <strong>{{ tally.unmarked }}</strong>
+    {% if missed %} · <strong class="warn">{{ missed }} lesson(s) need cover</strong>{% endif %}
+  </p>
+</section>
+
+<section class="card">
+  {% if not register %}
+    <p class="muted">No teachers yet. Add teachers on the Teachers page first.</p>
+  {% else %}
+  <form method="post" action="{{ url_for('teacher_attendance.save') }}">
+    <input type="hidden" name="date" value="{{ d.isoformat() }}">
+    <div class="toolbar">
+      <button type="button" class="btn" onclick="markAll('P')">Mark all present</button>
+      <button type="button" class="btn" onclick="markAll('')">Clear all</button>
+      <span class="spacer"></span>
+      <button class="btn primary" type="submit">Save attendance</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Teacher</th><th>Lessons</th>
+        {% for s, label in statuses %}<th>{{ label }}</th>{% endfor %}
+        <th>Arrived</th><th>Note</th><th>Lessons taken</th></tr></thead>
+      <tbody>
+      {% for r in register %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td>{{ r.lessons or '—' }}</td>
+          {% for s, label in statuses %}
+            <td><input type="radio" name="status_{{ r.id }}" value="{{ s }}" {{ 'checked' if r.status == s }}
+                       aria-label="{{ r.name }} {{ label }}"></td>
+          {% endfor %}
+          <td><input type="time" name="time_{{ r.id }}" value="{{ r.time_in }}"></td>
+          <td><input type="text" name="note_{{ r.id }}" value="{{ r.note }}" maxlength="200" placeholder="optional"></td>
+          <td>{% if r.recorded %}<a href="{{ url_for('lesson_attendance.index', date=d.isoformat(), teacher_id=r.id) }}">{{ r.taken }} / {{ r.recorded }}</a>
+              {% elif r.lessons %}<a href="{{ url_for('lesson_attendance.index', date=d.isoformat(), teacher_id=r.id) }}">record</a>
+              {% else %}—{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="toolbar"><span class="spacer"></span><button class="btn primary" type="submit">Save attendance</button></div>
+  </form>
+  {% endif %}
+</section>
+
+<script>
+  function markAll(value) {
+    document.querySelectorAll('input[type=radio]').forEach(function (r) { r.checked = (r.value === value); });
+  }
+</script>
+{% endblock %}

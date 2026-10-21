@@ -1,0 +1,11 @@
+{% macro rail(steps, active_step) %}
+<div class="setup-rail">
+  {% for s in steps %}
+    {% set idx = steps.index(s) %}
+    {% set active_idx = steps.index(active_step) %}
+    <span class="{{ 'current' if s == active_step else ('done' if idx < active_idx else '') }}">
+      {{ loop.index }}. {{ s|capitalize }}
+    </span>
+  {% endfor %}
+</div>
+{% endmacro %}

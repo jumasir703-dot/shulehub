@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}My account{% endblock %}
+{% block content %}
+<h1>My account</h1>
+<div class="card" style="max-width:520px;">
+  <dl class="kv" style="margin-top:0;">
+    <dt>Name</dt><dd>{{ user.full_name }}</dd>
+    <dt>Username</dt><dd>{{ user.username }}</dd>
+    <dt>Role</dt><dd>{{ ROLES[user.role] }}</dd>
+  </dl>
+</div>
+<div class="card" style="max-width:520px;">
+  <h3>Change password</h3>
+  <form method="post" action="{{ url_for('auth.account_password') }}">
+    <div class="form-row"><div><label>Current password</label><input type="password" name="current" autocomplete="current-password" required></div></div>
+    <div class="form-row">
+      <div><label>New password (8+ characters)</label><input type="password" name="password" autocomplete="new-password" required></div>
+      <div><label>Repeat new password</label><input type="password" name="confirm" autocomplete="new-password" required></div>
+    </div>
+    <div style="margin-top:14px;"><button type="submit">Change password</button></div>
+  </form>
+</div>
+{% endblock %}

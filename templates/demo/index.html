@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}See an example{% endblock %}
+{% block content %}
+<h1>See how ShuleHub works</h1>
+<p class="section-note">
+  Open any part of the app with a pretend school, <strong>Mwanga Academy</strong>, already filled in:
+  teachers, classes, a finished timetable, students, exam results, attendance and fees.
+  Click around, add things, delete things. <strong>Your own school's records are never touched</strong>
+  and nothing you do in the example is kept.
+</p>
+
+{% if demo_mode %}
+<div class="card callout">
+  <strong>You're in the example right now.</strong>
+  Pick another part below to jump to it, reset the example to how it started, or leave it.
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+    <form method="post" action="{{ url_for('demo.start') }}">
+      <input type="hidden" name="to" value="home"><input type="hidden" name="reset" value="1">
+      <button type="submit" class="secondary small">Reset the example</button>
+    </form>
+    <form method="post" action="{{ url_for('demo.exit_demo') }}">
+      <button type="submit" class="small">Exit example</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="demo-grid">
+
+  <div class="card demo-card">
+    <h3>Timetable</h3>
+    <p>Set up your grades, subjects, teachers, rooms and school day once. The auto-scheduler then fills the whole week for every class without clashing a teacher or a room.</p>
+    <ul>
+      <li>3 classes with a complete weekly timetable</li>
+      <li>8 teachers, each with their own timetable</li>
+      <li>Export to PDF for the notice board, or CSV</li>
+    </ul>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <form method="post" action="{{ url_for('demo.start') }}"><input type="hidden" name="to" value="timetable"><button type="submit">View the timetable</button></form>
+      <form method="post" action="{{ url_for('demo.start') }}"><input type="hidden" name="to" value="builder"><button type="submit" class="secondary">Try the builder</button></form>
+    </div>
+  </div>
+
+  <div class="card demo-card">
+    <h3>Exam Analysis</h3>
+    <p>Enter or import marks and get merit lists, subject and stream analysis, teacher performance, exam-to-exam comparison and printable report forms.</p>
+    <ul>
+      <li>3 exams for each of two grades, 8 subjects each</li>
+      <li>Rankings, grade distributions and improvement over time</li>
+      <li>A report form for any student</li>
+    </ul>
+    <form method="post" action="{{ url_for('demo.start') }}"><input type="hidden" name="to" value="exams"><button type="submit">View exam analysis</button></form>
+  </div>
+
+  <div class="card demo-card">
+    <h3>Students &amp; Guardians</h3>
+    <p>One record for every learner: admission details, guardians and their phone numbers, and enrolment status, with promotion at the end of the year.</p>
+    <ul>
+      <li>42 students across 3 classes</li>
+      <li>Guardian contacts and class lists</li>
+      <li>Search, import and export</li>
+    </ul>
+    <form method="post" action="{{ url_for('demo.start') }}"><input type="hidden" name="to" value="students"><button type="submit">View students</button></form>
+  </div>
+
+  <div class="card demo-card">
+    <h3>Attendance</h3>
+    <p>Teachers mark the class register in a few clicks. See who is absent today, which children keep missing school, and reports per class.</p>
+    <ul>
+      <li>Three weeks of registers already marked</li>
+      <li>Absentee list with guardian phone numbers</li>
+      <li>Per-class attendance reports</li>
+    </ul>
+    <form method="post" action="{{ url_for('demo.start') }}"><input type="hidden" name="to" value="attendance"><button type="submit">View attendance</button></form>
+  </div>
+
+  <div class="card demo-card">
+    <h3>Fees &amp; Payments</h3>
+    <p>Set the fee structure per grade, create every invoice in one click, record payments (cash, M-Pesa, bank) and print receipts and statements.</p>
+    <ul>
+      <li>A full term of invoices with payments recorded</li>
+      <li>Balances: who has cleared and who still owes</li>
+      <li>PDF receipts and fee statements</li>
+    </ul>
+    <form method="post" action="{{ url_for('demo.start') }}"><input type="hidden" name="to" value="fees"><button type="submit">View fees</button></form>
+  </div>
+
+</div>
+
+<p class="demo-note">
+  The example uses made-up names and phone numbers. Leaving it, or closing ShuleHub, discards everything in it.
+</p>
+
+<div id="demo-busy" role="status" aria-live="polite" hidden
+     style="position:fixed; inset:0; z-index:9999; background:rgba(16,53,36,.93); color:#fff;
+            display:none; align-items:center; justify-content:center; text-align:center; padding:24px;">
+  <div>
+    <div style="width:46px; height:46px; margin:0 auto 18px; border:5px solid rgba(255,255,255,.3);
+                border-top-color:#e0a020; border-radius:50%; animation:demo-spin 0.9s linear infinite;"></div>
+    <div style="font-size:1.25rem; font-weight:700;">Preparing the example school…</div>
+    <div style="margin-top:8px; opacity:.85;">This can take a few seconds. Please don't click again.</div>
+  </div>
+</div>
+<style>@keyframes demo-spin { to { transform: rotate(360deg); } }</style>
+<script>
+  // Show that something is happening, and ignore a second click while the example is being built.
+  (function () {
+    var busy = false, overlay = document.getElementById('demo-busy');
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form || !(form.getAttribute('action') || '').match(/\/demo\/start$/)) return;
+      if (busy) { e.preventDefault(); return; }
+      busy = true;
+      overlay.hidden = false; overlay.style.display = 'flex';
+    });
+    // If the browser restores this page from its back/forward cache, clear the overlay.
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) { busy = false; overlay.hidden = true; overlay.style.display = 'none'; }
+    });
+  })();
+</script>
+{% endblock %}

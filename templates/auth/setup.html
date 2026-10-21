@@ -1,0 +1,16 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Create administrator{% endblock %}
+{% block body %}
+<h1>Create the administrator</h1>
+<p class="section-note">This is the first login for this school. It can create logins for teachers and the bursar afterwards.</p>
+{% if error %}<div class="auth-error" style="margin-top:12px;">{{ error }}</div>{% endif %}
+<form method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div><label>Your full name</label><input type="text" name="full_name" value="{{ request.form.get('full_name','') }}" required autofocus></div>
+  <div><label>Username</label><input type="text" name="username" value="{{ request.form.get('username','') }}" autocapitalize="none" required></div>
+  <div><label>Password (8+ characters)</label><input type="password" name="password" autocomplete="new-password" required></div>
+  <div><label>Repeat password</label><input type="password" name="confirm" autocomplete="new-password" required></div>
+  {% if needs_token %}<div><label>Setup code (from your hosting settings)</label><input type="password" name="setup_token" required></div>{% endif %}
+  <button type="submit">Create administrator</button>
+</form>
+{% endblock %}

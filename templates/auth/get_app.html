@@ -1,0 +1,53 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Install ShuleHub{% endblock %}
+{% block body %}
+<h1>Get the ShuleHub app</h1>
+<p class="section-note">Use ShuleHub like an app on your phone, or download the offline version for a Windows computer.</p>
+
+<h3 style="margin-top:18px;">On your phone</h3>
+<p class="section-note">No app store needed. It opens full-screen from your home screen, like any other app.</p>
+<button type="button" id="install-btn" style="display:none;width:100%;">Install ShuleHub</button>
+<div id="install-help">
+  <p><strong>Android (Chrome):</strong> tap the <strong>⋮</strong> menu, then <strong>Install app</strong> (or <strong>Add to Home screen</strong>).</p>
+  <p><strong>iPhone (Safari):</strong> tap the <strong>Share</strong> button, then <strong>Add to Home Screen</strong>. It must be opened in Safari for this to work.</p>
+</div>
+<p id="installed-msg" class="section-note" style="display:none;">ShuleHub is already installed on this device.</p>
+
+<h3 style="margin-top:22px;">On a Windows computer</h3>
+{% if windows_url %}
+<p class="section-note">The offline version keeps your school's records on that computer and works without internet. It needs a passkey to activate.</p>
+<a class="btn" href="{{ windows_url }}" style="display:block;text-align:center;">Download for Windows</a>
+{% else %}
+<p class="section-note">The Windows download isn't available yet. Ask your school administrator.</p>
+{% endif %}
+
+<p style="margin-top:20px;"><a href="{{ url_for('auth.login') }}">&larr; Back to sign in</a></p>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}"));
+  }
+  let deferred = null;
+  const btn = document.getElementById('install-btn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); deferred = e;
+    btn.style.display = 'block';
+    document.getElementById('install-help').style.display = 'none';
+  });
+  btn.addEventListener('click', async () => {
+    if (!deferred) return;
+    deferred.prompt();
+    await deferred.userChoice;
+    deferred = null; btn.style.display = 'none';
+  });
+  window.addEventListener('appinstalled', () => {
+    btn.style.display = 'none';
+    document.getElementById('install-help').style.display = 'none';
+    document.getElementById('installed-msg').style.display = 'block';
+  });
+  if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+    document.getElementById('install-help').style.display = 'none';
+    document.getElementById('installed-msg').style.display = 'block';
+  }
+</script>
+{% endblock %}

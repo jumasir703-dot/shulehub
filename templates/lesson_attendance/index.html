@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Lesson attendance{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Lesson attendance</h1>
+  <p class="muted">Record whether each timetabled lesson was taken. Lessons come from the timetable for that weekday.</p>
+</div>
+
+<section class="card">
+  <div class="toolbar">
+    <a class="btn" href="{{ url_for('lesson_attendance.index', date=prev_day, **keep) }}">← Previous day</a>
+    <form method="get" action="{{ url_for('lesson_attendance.index') }}" style="display:inline">
+      <input type="date" name="date" value="{{ d.isoformat() }}" onchange="this.form.submit()">
+      <select name="stream_id" onchange="this.form.submit()">
+        <option value="">All classes</option>
+        {% for s in streams %}<option value="{{ s.id }}" {{ 'selected' if stream_id == s.id }}>{{ s.grade_name }} {{ s.name }}</option>{% endfor %}
+      </select>
+      <select name="teacher_id" onchange="this.form.submit()">
+        <option value="">All teachers</option>
+        {% for t in teachers %}<option value="{{ t.id }}" {{ 'selected' if teacher_id == t.id }}>{{ t.name }}</option>{% endfor %}
+      </select>
+    </form>
+    <a class="btn" href="{{ url_for('lesson_attendance.index', date=next_day, **keep) }}">Next day →</a>
+    <a class="btn" href="{{ url_for('lesson_attendance.index', date=today, **keep) }}">Today</a>
+    <span class="spacer"></span>
+    <a class="btn" href="{{ url_for('lesson_attendance.report') }}">Reports</a>
+  </div>
+  <p><strong>{{ d.strftime('%A %d %B %Y') }}</strong> —
+    {% for s, label in statuses %}{{ label }}: <strong>{{ tally[s] }}</strong> · {% endfor %}
+    Unmarked: <strong>{{ tally.unmarked }}</strong></p>
+</section>
+
+<section class="card">
+  {% if not lessons %}
+    <p class="muted">{% if weekend %}This date is a weekend, so there are no lessons.{% else %}No timetabled lessons match this date and filter. Generate or build the timetable first.{% endif %}</p>
+  {% else %}
+  <form method="post" action="{{ url_for('lesson_attendance.save') }}">
+    <input type="hidden" name="date" value="{{ d.isoformat() }}">
+    <input type="hidden" name="stream_id" value="{{ stream_id or '' }}">
+    <input type="hidden" name="teacher_id" value="{{ teacher_id or '' }}">
+    <div class="toolbar">
+      <button type="button" class="btn" onclick="markAll('A')">Mark all attended</button>
+      <button type="button" class="btn" onclick="markAll('')">Clear all</button>
+      <span class="spacer"></span>
+      <button class="btn primary" type="submit">Save attendance</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Time</th><th>Class</th><th>Subject</th><th>Teacher</th>
+        {% for s, label in statuses %}<th>{{ label }}</th>{% endfor %}
+        <th>Covered by</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for r in lessons %}
+        {% set cur = r.status or ('M' if r.suggest_missed else '') %}
+        <tr>
+          <td>P{{ r.period_number }}<br><small>{{ r.start_time }}–{{ r.end_time }}</small></td>
+          <td>{{ r.grade_name }} {{ r.stream_name }}</td>
+          <td>{{ r.subject_name }}</td>
+          <td>{{ r.teacher_name or '—' }}{% if r.suggest_missed %}<br><small class="warn">marked absent today</small>{% endif %}</td>
+          {% for s, label in statuses %}
+            <td><input type="radio" name="st_{{ r.key }}" value="{{ s }}" {{ 'checked' if cur == s }}
+                       aria-label="{{ r.subject_name }} {{ label }}"></td>
+          {% endfor %}
+          <td>
+            <select name="cv_{{ r.key }}">
+              <option value="">—</option>
+              {% for t in teachers if t.id != r.teacher_id %}<option value="{{ t.id }}" {{ 'selected' if r.cover_id == t.id }}>{{ t.name }}</option>{% endfor %}
+            </select>
+          </td>
+          <td><input type="text" name="note_{{ r.key }}" value="{{ r.note }}" maxlength="200" placeholder="optional"></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="toolbar"><span class="spacer"></span><button class="btn primary" type="submit">Save attendance</button></div>
+  </form>
+  {% endif %}
+</section>
+
+<script>
+  function markAll(value) {
+    document.querySelectorAll('input[type=radio]').forEach(function (r) { r.checked = (r.value === value); });
+  }
+</script>
+{% endblock %}

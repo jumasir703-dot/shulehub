@@ -1,0 +1,10 @@
+# Requirements for building the offline desktop version with PyInstaller.
+# psycopg2-binary is deliberately left out: offline mode always uses the
+# built-in SQLite fallback in database.py, so Postgres isn't needed.
+Flask==3.0.3
+reportlab==4.2.5
+pyinstaller==6.10.0
+pywebview==6.2.1
+openpyxl==3.1.5
+pdfplumber==0.11.9
+pillow>=10.0.0

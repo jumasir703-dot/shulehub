@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Subject Allocations{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Subject Allocations</h1>
+    <p class="section-note">Who teaches which subject, and in which class. A teacher can enter marks <strong>only</strong> for what is allocated to them here. Their login must also be linked to their teacher record on Staff &amp; Logins.</p>
+  </div>
+  <div class="head-actions"><a class="btn secondary" href="{{ url_for('results.index') }}">← Compile &amp; Publish</a></div>
+</div>
+
+{% if n_timetable %}
+<div class="card">
+  <h3>Copy from the timetable</h3>
+  <p class="section-note">Your timetable already says who teaches what in each class. One click turns that into allocations (existing ones are kept).</p>
+  <form method="post" action="{{ url_for('results.allocation_from_timetable') }}"><button type="submit">Fill from timetable</button></form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Add an allocation</h3>
+  <form method="post" action="{{ url_for('results.allocation_add') }}" class="form-row">
+    <div><label>Teacher</label>
+      <select name="teacher_id" required>
+        <option value="">Choose…</option>
+        {% for t in teachers %}<option value="{{ t.id }}" {{ 'selected' if teacher_id == t.id }}>{{ t.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Subject</label>
+      <select name="subject_id" required>
+        <option value="">Choose…</option>
+        {% set ns = namespace(g=None) %}
+        {% for s in subjects %}
+          {% if ns.g != s.grade_id %}{% if ns.g is not none %}</optgroup>{% endif %}<optgroup label="{{ s.grade_name }}">{% set ns.g = s.grade_id %}{% endif %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+        {% if ns.g is not none %}</optgroup>{% endif %}
+      </select></div>
+    <div><label>Class</label>
+      <select name="stream_id">
+        <option value="0">All classes of that grade</option>
+        {% for st in streams %}<option value="{{ st.id }}">{{ st.grade_name }} · {{ st.name }}</option>{% endfor %}
+      </select></div>
+    <div style="flex:0;"><button type="submit">Add</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div style="max-width:320px;"><label>Show teacher</label>
+      <select name="teacher_id" onchange="this.form.submit()">
+        <option value="">All teachers</option>
+        {% for t in teachers %}<option value="{{ t.id }}" {{ 'selected' if teacher_id == t.id }}>{{ t.name }}{% if t.id not in linked %} (no login){% endif %}</option>{% endfor %}
+      </select></div>
+  </form>
+  <div class="table-scroll">
+  <table style="margin-top:12px;">
+    <thead><tr><th>Teacher</th><th>Grade</th><th>Subject</th><th>Class</th><th></th></tr></thead>
+    <tbody>
+    {% for a in rows %}
+      <tr>
+        <td>{{ a.teacher_name }}</td><td>{{ a.grade_name }}</td><td>{{ a.subject_name }}</td>
+        <td>{{ a.stream_name if a.stream_id else 'All classes' }}</td>
+        <td style="text-align:right;">
+          <form method="post" action="{{ url_for('results.allocation_delete', alloc_id=a.id) }}" class="inline-form">
+            <input type="hidden" name="teacher_id" value="{{ teacher_id or '' }}">
+            <button class="small secondary" type="submit">Remove</button></form></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="section-note">No allocations yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

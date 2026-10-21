@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Published Results{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Published Results</h1>
+    <p class="section-note">Exams whose results the administrator has released.</p>
+  </div>
+  <div class="head-actions"><a class="btn secondary" href="{{ url_for('mymarks.index') }}">← My Marks</a></div>
+</div>
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Exam</th><th>Grade</th><th>Term / Year</th><th>Published</th><th></th></tr></thead>
+    <tbody>
+    {% for exam, pub in exams %}
+      <tr>
+        <td><strong>{{ exam.name }}</strong></td>
+        <td>{{ exam.grade_name }}</td>
+        <td>Term {{ exam.term }}, {{ exam.year }}</td>
+        <td>{{ pub.published_at if pub else '' }}</td>
+        <td style="text-align:right;">
+          <a class="btn secondary" href="{{ url_for('analytics.exam_overview', exam_id=exam.id) }}">Overview</a>
+          <a class="btn" href="{{ url_for('analytics.merit_list', exam_id=exam.id) }}">Merit list</a>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="section-note">Nothing has been published yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

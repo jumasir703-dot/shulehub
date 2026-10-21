@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Scheduling Rules{% endblock %}
+{% block content %}
+<h1>Scheduling Rules</h1>
+
+<div class="card">
+  <p class="section-note">
+    These control how the "Auto-Generate Timetable" button on the Builder page behaves.
+    Tell me any new rule you want and I'll add it here as a toggle.
+  </p>
+  <form method="post" action="{{ url_for('save_rules') }}">
+    <label style="font-weight:normal;">
+      <input type="checkbox" name="avoid_same_day_repeat"
+             {% if settings.avoid_same_day_repeat == '1' %}checked{% endif %}>
+      Avoid scheduling the same subject twice on the same day for a stream
+      (falls back to allowing it only if there's no other way to fit all periods in)
+    </label>
+    <br><br>
+    <label style="font-weight:normal;">
+      <input type="checkbox" name="vary_period_slot"
+             {% if settings.vary_period_slot == '1' %}checked{% endif %}>
+      Spread each subject across different periods during the week
+      (avoid it always landing in the same time slot every day — falls back
+      to repeating a slot only if there's no other way to fit everything in)
+    </label>
+    <br><br>
+    <button type="submit">Save Rules</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Subject Rules</h3>
+  <p class="section-note">
+    Add rules per subject: force a number of <strong>double lessons</strong> (two periods
+    back-to-back, never spanning the break) per week, or stop a subject from being
+    scheduled <strong>after a given period</strong> in the day.
+  </p>
+
+  <table style="margin-top:14px;">
+    <thead><tr><th>Subject</th><th>Rule</th><th>Value</th><th></th></tr></thead>
+    <tbody>
+      {% for r in subject_rules %}
+      <tr>
+        <td>{{ r.subject_name }}</td>
+        <td>
+          {% if r.rule_type == 'double_lesson' %}
+            Double lesson(s) per week
+          {% else %}
+            Not after period
+          {% endif %}
+        </td>
+        <td>{{ r.value }}</td>
+        <td>
+          <form class="inline-form" method="post"
+                action="{{ url_for('delete_subject_rule', rule_id=r.id) }}"
+                onsubmit="return confirm('Remove this rule?');">
+            <button type="submit" class="danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="section-note">No subject rules yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h4 style="margin-top:20px;">Add a rule</h4>
+  <form method="post" action="{{ url_for('add_subject_rule') }}" id="add-rule-form">
+    <div class="form-row">
+      <div>
+        <label>Subject</label>
+        <select name="subject_id" required>
+          {% for s in subjects %}
+            <option value="{{ s.id }}">{{ s.name }} [{{ s.grade_name }}]</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Rule type</label>
+        <select name="rule_type" id="rule-type-select">
+          <option value="double_lesson">Double lesson(s) per week</option>
+          <option value="not_after_period">Not after period</option>
+        </select>
+      </div>
+      <div id="double-value-field">
+        <label>How many / week</label>
+        <input type="number" name="value" min="1" max="5" value="1">
+      </div>
+      <div id="period-value-field" style="display:none;">
+        <label>Cutoff period</label>
+        <select name="value" disabled>
+          {% for p in period_options %}
+            <option value="{{ p }}">Period {{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex:0;">
+        <button type="submit">Add Rule</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // The form has two differently-shaped "value" inputs (a small count for
+  // double lessons, a period picker for the cutoff rule) because they mean
+  // very different things. Only one is ever active: toggling `disabled`
+  // means the browser automatically excludes the inactive one from
+  // submission, so the server only ever sees a single "value" field.
+  const ruleTypeSelect = document.getElementById('rule-type-select');
+  const doubleField = document.getElementById('double-value-field');
+  const periodField = document.getElementById('period-value-field');
+  const doubleInput = doubleField.querySelector('input[name="value"]');
+  const periodInput = periodField.querySelector('select[name="value"]');
+
+  function syncRuleFields(){
+    const isDouble = ruleTypeSelect.value === 'double_lesson';
+    doubleField.style.display = isDouble ? '' : 'none';
+    periodField.style.display = isDouble ? 'none' : '';
+    doubleInput.disabled = !isDouble;
+    periodInput.disabled = isDouble;
+  }
+  ruleTypeSelect.addEventListener('change', syncRuleFields);
+  syncRuleFields();
+</script>
+{% endblock %}

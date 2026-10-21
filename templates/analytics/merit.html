@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Merit list · {{ exam.name }}{% endblock %}
+{% block content %}
+{% include "analytics/_nav.html" %}
+<div class="card">
+  <div class="form-row" style="margin-top:0;">
+    <form method="get" style="display:contents;">
+      <div style="max-width:320px;">
+        <label>Show</label>
+        <select name="stream_id" onchange="this.form.submit()">
+          <option value="">Whole {{ exam.grade_name }}</option>
+          {% for s in res.streams %}
+            <option value="{{ s.id if s.id else 'none' }}" {{ 'selected' if (stream_key == s.id and s.id) or (stream_key == 'none' and not s.id) }}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+    {% if can('exams') or can('results_publish') %}
+    <div style="flex:0 0 auto; display:flex; gap:8px; flex-wrap:wrap;">
+      <a class="btn secondary" href="{{ url_for('analytics.merit_csv', exam_id=exam.id, stream_id=request.args.get('stream_id', '')) }}">CSV</a>
+      <a class="btn secondary" href="{{ url_for('analytics.merit_csv', exam_id=exam.id, stream_id=request.args.get('stream_id', ''), fmt='xlsx') }}">Excel</a>
+      <a class="btn secondary" href="{{ url_for('analytics.merit_pdf', exam_id=exam.id, stream_id=request.args.get('stream_id', '')) }}">PDF</a>
+      <a class="btn" href="{{ url_for('analytics.reports_pdf', exam_id=exam.id, stream_id=request.args.get('stream_id', '')) }}">Report forms (PDF)</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+  <table class="merit-table">
+    <thead>
+      <tr><th>Pos</th><th>Str</th><th class="sticky-col">Student</th><th>Stream</th>
+        {% for sub in res.subjects %}<th class="num">{{ sub.name }}<small>/ {{ sub.out_of }}</small></th>{% endfor %}
+        <th class="num">Subj</th><th class="num">Total</th><th class="num">Mean %</th><th>{{ 'Level' if res.scale == 'CBC8' else 'Grade' }}</th><th class="num">Pts</th></tr>
+    </thead>
+    <tbody>
+    {% for s in rows %}
+      <tr>
+        <td><strong>{{ s.position }}</strong></td><td>{{ s.stream_position }}</td>
+        <td class="sticky-col">{% if can('exams') %}<a href="{{ url_for('analytics.student_profile', student_id=s.id) }}">{{ s.name }}</a>{% else %}{{ s.name }}{% endif %} <span class="adm">{{ s.admission_no }}</span></td>
+        <td>{{ s.stream_name or '—' }}</td>
+        {% for sub in res.subjects %}
+          {% set v = s.scores.get(sub.id) %}
+          <td class="num">{% if v %}<span class="cell {{ v.label|lvl }}" title="{{ v.pct|pct }}% · {{ v.label }}">{{ v.score|num }}</span>{% endif %}</td>
+        {% endfor %}
+        <td class="num">{% if s.n_subjects < typical %}<span class="cell lv-mid" title="Marks in {{ s.n_subjects }} of the usual {{ typical }} subjects — result may be incomplete">⚠ {{ s.n_subjects }}</span>{% else %}{{ s.n_subjects }}{% endif %}</td>
+        <td class="num">{{ s.total|num }}</td><td class="num"><strong>{{ s.mean_pct|pct }}</strong></td>
+        <td><span class="chip {{ s.grade_label|lvl }}">{{ s.grade_label }}</span></td><td class="num">{{ s.points }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="{{ res.subjects|length + 9 }}" class="section-note">No marks entered{{ ' for this selection' if stream_key is not none }} yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">Positions are ranked on mean %, so students taking different optional subjects are compared fairly. Equal means share a position.
+    “Str” is the position within the student's stream. Hover a mark to see its percentage and grade. A ⚠ under “Subj” means the student has marks in fewer subjects than most classmates, so their position may change once everything is entered.</p>
+  {% if unmarked %}<p class="section-note"><strong>{{ unmarked|length }}</strong> student(s) have no marks yet: {{ unmarked[:8]|map(attribute='name')|join(', ') }}{{ '…' if unmarked|length > 8 }}</p>{% endif %}
+</div>
+{% endblock %}

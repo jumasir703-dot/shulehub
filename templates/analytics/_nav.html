@@ -1,0 +1,26 @@
+{# Sub-navigation shown on every page of a single exam. Expects `exam`, `active`, and optionally `published`.
+   Each tab lists the services that may open it; a person needs any one of them. #}
+<div class="exam-head">
+  <div>
+    {% if can('exams') %}<a class="crumb" href="{{ url_for('analytics.exams_page') }}">← All exams</a>
+    {% elif can('results_publish') %}<a class="crumb" href="{{ url_for('results.exam_page', exam_id=exam.id) }}">← Compile &amp; publish</a>
+    {% else %}<a class="crumb" href="{{ url_for('mymarks.published') }}">← Published results</a>{% endif %}
+    <h1>{{ exam.name }}
+      {% if published %}<span class="badge ok">Published</span>
+      {% elif can('exams') or can('results_publish') %}<span class="badge warn">Draft — not published</span>{% endif %}
+    </h1>
+    <p class="section-note">{{ exam.grade_name }} · Term {{ exam.term }}, {{ exam.year }}{% if exam.exam_date %} · {{ exam.exam_date }}{% endif %}</p>
+  </div>
+</div>
+<nav class="subnav">
+  {% for key, label, endpoint, needs in [
+      ('overview','Overview','analytics.exam_overview', ['exams','results_publish','marks_entry']),
+      ('marks','Enter marks','analytics.marks_page', ['exams']),
+      ('merit','Merit list','analytics.merit_list', ['exams','results_publish','marks_entry']),
+      ('subjects','Subjects & teachers','analytics.subject_analysis', ['exams','results_publish']),
+      ('setup','Setup','analytics.exam_setup', ['exams'])] %}
+    {% set ns = namespace(ok=false) %}
+    {% for n in needs %}{% if can(n) %}{% set ns.ok = true %}{% endif %}{% endfor %}
+    {% if ns.ok %}<a href="{{ url_for(endpoint, exam_id=exam.id) }}" class="{{ 'active' if active == key else '' }}">{{ label }}</a>{% endif %}
+  {% endfor %}
+</nav>

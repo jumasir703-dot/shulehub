@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ st.name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('analytics.students_page', grade_id=st.grade_id) }}">← Students</a>
+<h1>{{ st.name }}</h1>
+<p class="section-note">Adm {{ st.admission_no }} · {{ st.grade_name }}{% if st.stream_name %} · {{ st.stream_name }}{% endif %}</p>
+
+<div class="grid-even">
+  <div class="card">
+    <h3>Progress across exams</h3>
+    {% if history %}
+      {{ chart }}
+      <table style="margin-top:10px;">
+        <thead><tr><th>Exam</th><th class="num">Mean %</th><th>Grade</th><th class="num">Position</th><th class="num">Change</th><th></th></tr></thead>
+        <tbody>
+        {% for h in history|reverse %}
+          <tr><td><a href="{{ url_for('analytics.exam_overview', exam_id=h.exam.id) }}">{{ h.exam.name }}</a> <small class="muted">T{{ h.exam.term }} {{ h.exam.year }}</small></td>
+              <td class="num"><strong>{{ h.mean_pct|pct }}</strong></td>
+              <td><span class="chip {{ h.grade_label|lvl }}">{{ h.grade_label }}</span></td>
+              <td class="num">{{ h.position }} / {{ h.of }}</td>
+              <td class="num {{ 'up' if h.deviation and h.deviation > 0 else ('down' if h.deviation and h.deviation < 0 else '') }}">{{ h.deviation|signed if h.deviation is not none else '—' }}</td>
+              <td><a href="{{ url_for('analytics.reports_pdf', exam_id=h.exam.id, student_id=st.id) }}">Report</a></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="section-note">No exam results for this student yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Details</h3>
+    <form method="post" action="{{ url_for('analytics.student_update', student_id=st.id) }}">
+      <div class="form-row" style="margin-top:6px;">
+        <div style="flex:2;"><label>Name</label><input type="text" name="name" value="{{ st.name }}" required></div>
+        <div style="max-width:100px;"><label>Gender</label>
+          <select name="gender"><option value="">—</option>
+            <option {{ 'selected' if st.gender == 'M' }}>M</option><option {{ 'selected' if st.gender == 'F' }}>F</option></select></div>
+      </div>
+      <div class="form-row">
+        <div><label>Stream</label>
+          <select name="stream_id"><option value="">(none)</option>
+            {% for s in streams %}<option value="{{ s.id }}" {{ 'selected' if st.stream_id == s.id }}>{{ s.name }}</option>{% endfor %}
+          </select></div>
+      </div>
+      <div style="margin-top:14px;"><button type="submit">Save</button></div>
+    </form>
+    <form method="post" action="{{ url_for('analytics.student_delete', student_id=st.id) }}" style="margin-top:14px;"
+          onsubmit="return confirm('Delete this student and ALL their marks?');">
+      <button type="submit" class="danger">Delete student</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Compile & Publish{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Compile &amp; Publish Results</h1>
+    <p class="section-note">Subject teachers submit their own marks. Results are compiled automatically as marks come in; when every sheet is submitted, open the exam and publish it.</p>
+  </div>
+  <div class="head-actions"><a class="btn secondary" href="{{ url_for('results.allocations') }}">Subject allocations</a></div>
+</div>
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Exam</th><th>Grade</th><th>Term / Year</th><th>Sheets submitted</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><a href="{{ url_for('results.exam_page', exam_id=r.exam.id) }}"><strong>{{ r.exam.name }}</strong></a></td>
+        <td>{{ r.exam.grade_name }}</td>
+        <td>Term {{ r.exam.term }}, {{ r.exam.year }}</td>
+        <td>{{ r.progress.submitted }} / {{ r.progress.total }}
+          <span class="meter"><i style="width: {{ r.progress.pct }}%"></i></span>
+          {% if r.progress.no_teacher %}<span class="section-note">{{ r.progress.no_teacher }} with no teacher</span>{% endif %}</td>
+        <td>{% if r.published %}<span class="badge ok">Published</span>
+            {% elif r.progress.complete %}<span class="badge warn">Ready to publish</span>
+            {% else %}<span class="badge off">Collecting marks</span>{% endif %}</td>
+        <td style="text-align:right;"><a class="btn secondary" href="{{ url_for('results.exam_page', exam_id=r.exam.id) }}">Open</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="section-note">No exams yet. Create one under Exam Analysis first.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

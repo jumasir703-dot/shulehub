@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Teacher attendance report{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Teacher attendance report</h1>
+  <p class="muted">Attendance % = (Present + Late) ÷ days marked. Excused days are not counted against a teacher.</p>
+</div>
+
+<section class="card">
+  <form method="get" action="{{ url_for('teacher_attendance.report') }}" class="grid-form">
+    <label>From <input type="date" name="from" value="{{ start.isoformat() }}"></label>
+    <label>To <input type="date" name="to" value="{{ end.isoformat() }}"></label>
+    <button class="btn" type="submit">Show</button>
+    <a class="btn" href="{{ url_for('teacher_attendance.export_pdf', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">PDF</a>
+    <a class="btn" href="{{ url_for('teacher_attendance.export_csv', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">CSV</a>
+    <a class="btn" href="{{ url_for('teacher_attendance.index') }}">← Register</a>
+  </form>
+</section>
+
+<section class="card">
+  {% if not rows %}
+    <p class="muted">No teachers yet.</p>
+  {% else %}
+    {% if not any_marked %}<p class="muted">Nothing marked between these dates.</p>{% endif %}
+    <table class="table">
+      <thead><tr><th>Teacher</th>{% for s, label in statuses %}<th>{{ label }}</th>{% endfor %}
+        <th>Days marked</th><th>Attendance</th><th>Lessons taken</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><a href="{{ url_for('teacher_attendance.teacher_history', teacher_id=r.id, **{'from': start.isoformat(), 'to': end.isoformat()}) }}">{{ r.name }}</a></td>
+          <td>{{ r.P }}</td><td>{{ r.L }}</td>
+          <td>{% if r.A %}<strong class="warn">{{ r.A }}</strong>{% else %}0{% endif %}</td>
+          <td>{{ r.E }}</td><td>{{ r.marked }}</td>
+          <td>{% if r.pct is none %}—{% else %}{{ r.pct }}%{% endif %}</td>
+          <td>{% if r.l_recorded %}{{ r.l_taken }} / {{ r.l_recorded }}{% else %}—{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</section>
+{% endblock %}

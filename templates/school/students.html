@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Students & Guardians{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Students &amp; Guardians</h1>
+    <p class="section-note">{{ counts.get('active', 0) }} active student(s){% if counts.get('graduated') %} · {{ counts.get('graduated') }} graduated{% endif %}{% if counts.get('transferred') %} · {{ counts.get('transferred') }} transferred{% endif %}{% if counts.get('withdrawn') %} · {{ counts.get('withdrawn') }} withdrawn{% endif %}</p>
+  </div>
+  <div class="head-actions">
+    {% if can('students_manage') %}<a class="btn secondary" href="{{ url_for('school.directory_csv', grade_id=grade_id, stream_id=stream_id, status=status, q=q) }}">Export CSV</a><a class="btn secondary" href="{{ url_for('school.directory_csv', fmt='xlsx', grade_id=grade_id, stream_id=stream_id, status=status, q=q) }}">Export Excel</a>{% endif %}
+    {% if can('students_manage') %}<a class="btn" href="{{ url_for('school.student_new') }}">+ Admit a student</a>{% endif %}
+  </div>
+</div>
+
+{% if can('students_manage') %}
+<div class="card">
+  <h3>Import from CSV, Excel or PDF</h3>
+  <p class="section-note">Columns: <code>admission_no, name, gender, grade, stream, dob, admission_date, upi, guardian_name, guardian_relationship, guardian_phone, guardian_email</code>. Only the first three of <code>admission_no, name, grade</code> are required.</p>
+  <form method="post" action="{{ url_for('school.students_import') }}" enctype="multipart/form-data" class="form-row">
+    <div><input type="file" name="file" accept=".csv,.xlsx,.xlsm,.pdf,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></div>
+    <div style="flex:0;"><button type="submit">Import</button></div>
+    <div style="flex:0;"><a href="{{ url_for('school.students_template') }}" style="white-space:nowrap;">Sample file</a></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Grade</label>
+      <select name="grade_id" onchange="document.getElementById('f-stream').value=''; this.form.submit()">
+        <option value="">All</option>
+        {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if grade_id == g.id }}>{{ g.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Stream</label>
+      <select name="stream_id" id="f-stream" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for s in streams if not grade_id or s.grade_id == grade_id %}<option value="{{ s.id }}" {{ 'selected' if stream_id == s.id }}>{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Status</label>
+      <select name="status" onchange="this.form.submit()">
+        {% for k, label in statuses.items() %}<option value="{{ k }}" {{ 'selected' if status == k }}>{{ label }}</option>{% endfor %}
+        <option value="all" {{ 'selected' if status == 'all' }}>All</option>
+      </select></div>
+    <div><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Name, admission no., guardian, phone"></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Filter</button></div>
+  </form>
+  <p class="section-note">{{ total }} student(s){{ ' — showing the first 500' if total > 500 }}</p>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Adm no.</th><th>Name</th><th>Class</th><th>Guardian</th><th>Phone</th>{% if status == 'all' %}<th>Status</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for s in students %}
+      <tr>
+        <td>{{ s.admission_no }}</td>
+        <td><a href="{{ url_for('school.student_detail', student_id=s.id) }}">{{ s.name }}</a></td>
+        <td>{{ s.stream_name or s.grade_name }}</td>
+        <td>{{ s.guardian_name or '—' }}</td>
+        <td>{% if s.guardian_phone %}<a href="tel:{{ s.guardian_phone }}">{{ s.guardian_phone }}</a>{% else %}—{% endif %}</td>
+        {% if status == 'all' %}<td><span class="badge {{ 'ok' if s.status == 'active' else 'off' }}">{{ statuses[s.status] }}</span></td>{% endif %}
+      </tr>
+    {% else %}<tr><td colspan="6" class="section-note">No students match.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

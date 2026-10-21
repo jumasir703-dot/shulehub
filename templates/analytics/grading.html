@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Grading scales{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('analytics.exams_page') }}">← Exam Analysis</a>
+<h1>Grading scales</h1>
+<p class="section-note">Each mark becomes a percentage of its subject's “out of”, then lands in the highest band whose minimum it reaches. Changes apply instantly to every exam — nothing is stored per exam.</p>
+
+{% for sc in scales %}
+<form method="post" action="{{ url_for('analytics.grading_save') }}" class="card">
+  <input type="hidden" name="scale" value="{{ sc.key }}">
+  <h3>{{ sc.title }}</h3>
+  <p class="section-note">Used by {{ sc.uses }}.</p>
+  <div class="table-scroll">
+  <table style="max-width:640px;">
+    <thead><tr><th>Grade</th><th>Points</th><th style="width:130px;">Minimum %</th><th>Remark</th></tr></thead>
+    <tbody>
+    {% for b in sc.bands %}
+      <tr>
+        <td><span class="chip {{ b.label|lvl }}">{{ b.label }}</span></td>
+        <td>{{ b.points }}</td>
+        <td><input type="text" inputmode="decimal" name="min_{{ b.id }}" value="{{ b.min_pct|num }}" {{ 'readonly' if loop.last }}></td>
+        <td><input type="text" name="remark_{{ b.id }}" value="{{ b.remark or '' }}"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="head-actions" style="margin-top:14px;">
+    <button type="submit" name="action" value="save">Save scale</button>
+    <button type="submit" name="action" value="reset" class="secondary" onclick="return confirm('Restore the default boundaries?');">Restore defaults</button>
+  </div>
+</form>
+{% endfor %}
+<p class="section-note" style="margin-top:14px;">The 8-4-4 scale uses the common school-level A–E boundaries; the CBC scale follows the 8 KNEC performance levels (EE1–BE2). Check both against your school's policy.</p>
+{% endblock %}

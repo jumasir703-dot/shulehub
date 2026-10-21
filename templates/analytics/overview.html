@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.name }}{% endblock %}
+{% block content %}
+{% include "analytics/_nav.html" %}
+
+{% if not n_ranked %}
+<div class="card callout">
+  <strong>No marks yet.</strong>
+  <p class="section-note">{% if not n_students %}Add students for {{ exam.grade_name }} first, then {% endif %}
+  {% if can('exams') %}<a href="{{ url_for('analytics.marks_page', exam_id=exam.id) }}">enter marks</a> or import them from a CSV.{% else %}Marks are entered by the subject teachers and compiled automatically.{% endif %}</p>
+</div>
+{% else %}
+<div class="stat-row">
+  <div class="stat"><span>Students marked</span><strong>{{ n_ranked }}<small> / {{ n_students }}</small></strong></div>
+  <div class="stat"><span>Grade mean</span><strong>{{ grade_mean|pct }}<small>%</small></strong></div>
+  <div class="stat"><span>Mean {{ 'level' if res.scale == 'CBC8' else 'grade' }}</span><strong><span class="chip {{ grade_label|lvl }}">{{ grade_label }}</span></strong></div>
+  <div class="stat"><span>Top student</span><strong class="small-val">{{ top[0].name }}<small> {{ top[0].mean_pct|pct }}%</small></strong></div>
+</div>
+
+<div class="grid-even">
+  <div class="card">
+    <h3>Overall grade spread</h3>
+    {% for d in dist %}
+      <div class="bar-row">
+        <span class="bar-label chip {{ d.label|lvl }}">{{ d.label }}</span>
+        <span class="bar"><i class="{{ d.label|lvl }}" style="width: {{ (100 * d.count / max_count)|round|int }}%"></i></span>
+        <span class="bar-val">{{ d.count }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h3>Top 5 students</h3>
+    <table>
+      <thead><tr><th>Pos</th><th>Name</th><th>Stream</th><th>Mean %</th><th>{{ 'Level' if res.scale == 'CBC8' else 'Grade' }}</th></tr></thead>
+      <tbody>
+      {% for s in top %}
+        <tr><td>{{ s.position }}</td><td>{% if can('exams') %}<a href="{{ url_for('analytics.student_profile', student_id=s.id) }}">{{ s.name }}</a>{% else %}{{ s.name }}{% endif %}</td>
+            <td>{{ s.stream_name or '—' }}</td><td>{{ s.mean_pct|pct }}</td>
+            <td><span class="chip {{ s.grade_label|lvl }}">{{ s.grade_label }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p style="margin-top:12px;"><a href="{{ url_for('analytics.merit_list', exam_id=exam.id) }}">Full merit list →</a></p>
+  </div>
+</div>
+
+<div class="grid-even">
+  <div class="card">
+    <h3>Streams compared</h3>
+    <table>
+      <thead><tr><th>Rank</th><th>Stream</th><th>Students</th><th>Mean %</th><th>Mean pts</th><th>Best student</th></tr></thead>
+      <tbody>
+      {% for s in streams %}
+        <tr><td>{{ s.rank }}</td><td>{{ s.name }}</td><td>{{ s.count }}</td>
+            <td>{{ s.mean_pct|pct }} <span class="chip {{ s.label|lvl }}">{{ s.label }}</span></td>
+            <td>{{ s.mean_points }}</td><td>{{ s.top_name }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Subjects ranked by mean</h3>
+    <table>
+      <thead><tr><th>Rank</th><th>Subject</th><th>Mean %</th><th>Pass rate</th></tr></thead>
+      <tbody>
+      {% for s in subjects|selectattr('entries')|sort(attribute='rank') %}
+        <tr><td>{{ s.rank }}</td><td>{{ s.name }}</td>
+            <td>{{ s.mean_pct|pct }} <span class="chip {{ s.label|lvl }}">{{ s.label }}</span></td>
+            <td>{{ s.pass_rate|pct }}%</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="section-note">Pass rate = share of students scoring {{ res.pass_pct }}% or more.</p>
+    {% if can('exams') or can('results_publish') %}<p style="margin-top:8px;"><a href="{{ url_for('analytics.subject_analysis', exam_id=exam.id) }}">Subject &amp; teacher analysis →</a></p>{% endif %}
+  </div>
+</div>
+
+{% if can('exams') or can('results_publish') %}
+<div class="card">
+  <h3>Report forms</h3>
+  <p class="section-note">One page per student, with marks, grades, subject positions, overall and stream position, and change since the previous exam.</p>
+  <div class="head-actions" style="margin-top:10px;">
+    <a class="btn" href="{{ url_for('analytics.reports_pdf', exam_id=exam.id) }}">Whole {{ exam.grade_name }} (PDF)</a>
+    {% for st in res.streams if st.id %}
+      <a class="btn secondary" href="{{ url_for('analytics.reports_pdf', exam_id=exam.id, stream_id=st.id) }}">{{ st.name }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

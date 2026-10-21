@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ teacher.name }} — lesson attendance{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ teacher.name }}</h1>
+  <p class="muted">Lessons recorded {{ start.strftime('%d %b %Y') }} to {{ end.strftime('%d %b %Y') }}</p>
+</div>
+
+<section class="card">
+  <div class="toolbar">
+    <a class="btn" href="{{ url_for('lesson_attendance.report', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">← Report</a>
+  </div>
+  {% if not rows %}
+    <p class="muted">No lessons recorded for this teacher in this period.</p>
+  {% else %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Time</th><th>Class</th><th>Subject</th><th>Result</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.att_date }}</td><td>{{ r.slot_label or '' }}</td><td>{{ r.stream_label or '' }}</td><td>{{ r.subject_name or '' }}</td>
+          <td>
+            {% if r.teacher_id == teacher.id %}
+              {% if r.status in ('M', 'C') %}<strong class="warn">{{ labels[r.status] }}</strong>{% else %}{{ labels.get(r.status, r.status) }}{% endif %}
+              {% if r.status == 'C' and r.cover_name %}(by {{ r.cover_name }}){% endif %}
+            {% else %}
+              Covered for {{ r.planned_name or 'another teacher' }}
+            {% endif %}
+          </td>
+          <td>{{ r.note or '' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+<h1>Attendance</h1>
+{% include "attendance/_nav.html" %}
+
+<div class="page-head">
+  <div class="inline-actions">
+    <a class="btn small secondary" href="{{ url_for('attendance.index', date=prev_day) }}">←</a>
+    <form method="get" class="inline-actions"><input type="date" name="date" value="{{ day }}" max="{{ today }}" onchange="this.form.submit()" style="width:auto;"></form>
+    {% if next_day %}<a class="btn small secondary" href="{{ url_for('attendance.index', date=next_day) }}">→</a>{% endif %}
+    <strong style="margin-left:6px;">{{ weekday }}{% if is_today %} · today{% endif %}</strong>
+  </div>
+</div>
+{% if not school_day %}<div class="card callout"><span class="section-note">{{ weekday }} isn't one of the school's teaching days (School Settings), but you can still record attendance.</span></div>{% endif %}
+
+<div class="stat-row">
+  <div class="stat"><span>School attendance</span><strong>{{ pct if pct is not none else '—' }}{% if pct is not none %}<small>%</small>{% endif %}</strong></div>
+  <div class="stat"><span>Classes marked</span><strong>{{ classes|selectattr('done')|list|length }}<small>/ {{ classes|length }}</small></strong></div>
+  <div class="stat"><span>Absent</span><strong>{{ absent|length }}</strong></div>
+</div>
+
+<div class="card">
+  <h3>Classes</h3>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Class</th><th class="money">Students</th><th class="money">Present</th><th class="money">Late</th><th class="money">Absent</th><th class="money">Excused</th><th></th></tr></thead>
+    <tbody>
+    {% for c in classes %}
+      <tr>
+        <td>{{ c.label }}</td><td class="money">{{ c.total }}</td>
+        {% if c.marked %}
+          <td class="money">{{ c.counts.P }}</td><td class="money">{{ c.counts.L }}</td>
+          <td class="money">{% if c.counts.A %}<span class="owes">{{ c.counts.A }}</span>{% else %}0{% endif %}</td><td class="money">{{ c.counts.E }}</td>
+          <td>{% if c.done %}<span class="badge ok">marked</span>{% else %}<span class="badge warn">{{ c.marked }}/{{ c.total }}</span>{% endif %}
+              <a class="btn small secondary" href="{{ url_for('attendance.mark', **{'class': c.key, 'date': day}) }}">Edit</a></td>
+        {% else %}
+          <td colspan="4" class="section-note">Not marked</td>
+          <td><a class="btn small" href="{{ url_for('attendance.mark', **{'class': c.key, 'date': day}) }}">Take register</a></td>
+        {% endif %}
+      </tr>
+    {% else %}<tr><td colspan="7" class="section-note">No classes yet — admit students and give them streams first.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% if absent %}
+<div class="card">
+  <h3>Absent on {{ day }}</h3>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Student</th><th>Class</th><th></th><th>Note</th><th>Guardian</th><th>Phone</th></tr></thead>
+    <tbody>
+    {% for a in absent %}
+      <tr><td><a href="{{ url_for('school.student_detail', student_id=a.id) }}">{{ a.name }}</a></td><td>{{ a.stream_name or a.grade_name }}</td>
+        <td><span class="badge {{ 'warn' if a.status == 'E' else 'bad' }}">{{ 'Excused' if a.status == 'E' else 'Absent' }}</span></td>
+        <td>{{ a.note or '' }}</td><td>{{ a.guardian or '—' }}</td><td>{% if a.phone %}<a href="tel:{{ a.phone }}">{{ a.phone }}</a>{% else %}—{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

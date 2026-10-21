@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+timetable.db
+.env
+demo.db
+demo.db-journal
+demo-*.db
+demo-*.db-journal
+venv/

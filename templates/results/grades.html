@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Grades & Streams{% endblock %}
+{% block content %}
+<h1>Grades &amp; Streams</h1>
+<p class="section-note">Lower Primary (Grades 1–3), Junior Secondary (Grades 7–9), Senior School (Grade 10) and legacy 8-4-4 (Forms 3–4). A <strong>stream</strong> is a class — add the streams you actually run, and only those appear in the Timetable Builder and Exam Analysis.</p>
+
+<div class="grid-2" style="margin-top:18px;">
+  <div class="card">
+    <h3>Grades / Forms</h3>
+    <div class="select-nav">
+      <label for="grade-nav">Choose a grade</label>
+      <select id="grade-nav" onchange="if(this.value) location.href=this.value;">
+        {% for g in grades %}
+          <option value="{{ url_for('grades_page', grade_id=g.id) }}" {{ 'selected' if g.id == selected_id }}>{{ g.name }} — {{ curriculum_labels.get(g.curriculum, g.curriculum) }}</option>
+        {% else %}
+          <option value="">No grades yet</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if selected_grade %}
+    <form class="inline-form" method="post" action="{{ url_for('delete_grade', grade_id=selected_id) }}"
+          onsubmit="return confirm('Delete {{ selected_grade.name }}? This also deletes its streams, subjects, students, exams and timetable entries.');">
+      <button type="submit" class="danger">Delete {{ selected_grade.name }}</button>
+    </form>
+    {% endif %}
+
+    <hr class="soft">
+    <h3>Add a grade</h3>
+    <form method="post" action="{{ url_for('add_grade') }}">
+      <label>Grade name</label>
+      <input type="text" name="name" placeholder="e.g. Grade 4" required>
+      <label style="margin-top:10px;">Level</label>
+      <select name="curriculum">
+        {% for code, label in curriculum_labels.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+      </select>
+      <label class="check" style="margin-top:10px;"><input type="checkbox" name="with_subjects" value="1" checked> Add the standard subjects for this level</label>
+      <div style="margin-top:12px;"><button type="submit">Add grade</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Streams {% if selected_grade %}for {{ selected_grade.name }}{% endif %}</h3>
+    <table>
+      <thead><tr><th>Stream Name</th><th>Pathway</th><th></th></tr></thead>
+      <tbody>
+        {% for s in streams %}
+        <tr>
+          <td>{{ s.name }}</td>
+          <td>{{ s.pathway_name or '—' }}</td>
+          <td>
+            <form class="inline-form" method="post" action="{{ url_for('delete_stream', stream_id=s.id) }}"
+                  onsubmit="return confirm('Delete this stream and all its timetable entries?');">
+              <input type="hidden" name="grade_id" value="{{ selected_id }}">
+              <button type="submit" class="danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="section-note">No streams yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="post" action="{{ url_for('add_stream') }}" class="form-row">
+      <input type="hidden" name="grade_id" value="{{ selected_id }}">
+      <div>
+        <label>Stream name</label>
+        <input type="text" name="name" placeholder="e.g. Grade 10 East" required>
+      </div>
+      {% if selected_grade and selected_grade.curriculum == 'CBC' %}
+      <div>
+        <label>Pathway</label>
+        <select name="pathway">
+          <option value="(none)">(none)</option>
+          {% for p in pathways %}
+            <option value="{{ p.name }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div style="flex:0;">
+        <button type="submit">Add Stream</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

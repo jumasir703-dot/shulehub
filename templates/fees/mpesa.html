@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}M-Pesa import{% endblock %}
+{% block content %}
+<h1>Fees &amp; Payments</h1>
+{% include "fees/_nav.html" %}
+
+{% if rows is none %}
+<div class="card" style="max-width:760px;">
+  <h3>Import an M-Pesa Paybill statement</h3>
+  <p class="section-note">Parents pay to {% if paybill %}Paybill <strong>{{ paybill }}</strong>{% else %}your Paybill{% endif %} using the student's <strong>admission number as the account number</strong>. Download the statement as CSV from the M-Pesa business portal and upload it here. You'll see exactly what will be recorded before anything is saved.</p>
+  <ul class="section-note" style="margin:10px 0 0 18px;">
+    <li>Needs a transaction code column (Receipt No / TransID), an amount column (Paid In / TransAmount) and an account column (A/C No / BillRefNumber).</li>
+    <li>Each transaction code is only ever recorded once, so uploading an overlapping statement is safe.</li>
+    <li>Rows whose account number doesn't match an admission number are listed so you can record them by hand.</li>
+  </ul>
+  <form method="post" action="{{ url_for('fees.mpesa_preview') }}" enctype="multipart/form-data" class="form-row">
+    <div><input type="file" name="file" accept=".csv,text/csv" required></div>
+    <div style="flex:0;"><button type="submit">Preview</button></div>
+  </form>
+</div>
+{% else %}
+<div class="stat-row">
+  <div class="stat"><span>Ready to import</span><strong>{{ counts.ok }}</strong></div>
+  <div class="stat"><span>Amount</span><strong class="small-val">KES {{ total_ok|kes }}</strong></div>
+  <div class="stat"><span>Already recorded</span><strong>{{ counts.duplicate }}</strong></div>
+  <div class="stat"><span>No matching student</span><strong class="{{ 'owes' if counts.unmatched }}">{{ counts.unmatched }}</strong></div>
+</div>
+<div class="card">
+  <div class="table-scroll"><table>
+    <thead><tr><th>Code</th><th>Date</th><th class="money">KES</th><th>Account</th><th>Student</th><th>Payer</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td>{{ r.code }}</td><td>{{ r.date }}</td><td class="money">{{ r.amount|kes }}</td><td>{{ r.account or '—' }}</td>
+        <td>{% if r.student %}{{ r.student.name }} <span class="section-note">{{ r.student.grade_name }}</span>{% else %}—{% endif %}</td>
+        <td class="section-note">{{ r.payer }}</td>
+        <td><span class="badge {{ 'ok' if r.status == 'ok' else 'off' if r.status == 'duplicate' else 'bad' }}">{{ 'will import' if r.status == 'ok' else 'already recorded' if r.status == 'duplicate' else 'no match' }}</span></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  <form method="post" action="{{ url_for('fees.mpesa_confirm') }}" class="inline-actions" style="margin-top:16px;">
+    <textarea name="csv_text" hidden>{{ csv_text }}</textarea>
+    {% if counts.ok %}<button type="submit">Import {{ counts.ok }} payment(s)</button>{% endif %}
+    <a class="btn secondary" href="{{ url_for('fees.mpesa') }}">Cancel</a>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

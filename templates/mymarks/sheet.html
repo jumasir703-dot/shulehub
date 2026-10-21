@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ sh.subject_name }} · {{ sh.stream_name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('mymarks.index') }}">← My Marks</a>
+<div class="page-head">
+  <div>
+    <h1>{{ sh.subject_name }} · {{ sh.stream_name }}</h1>
+    <p class="section-note">{{ exam.name }} · {{ exam.grade_name }} · Term {{ exam.term }}, {{ exam.year }} · marked out of <strong>{{ sh.out_of }}</strong></p>
+  </div>
+  <div class="head-actions">
+    <span class="badge {{ 'ok' if sh.status == 'submitted' else ('warn' if sh.status == 'in_progress' else 'off') }}">{{ STATUS_LABEL[sh.status] }}</span>
+  </div>
+</div>
+
+{% if lock == 'published' %}
+<div class="card callout"><strong>Results are published.</strong>
+  <p class="section-note">These marks are final and locked. Speak to the administrator if something needs correcting.</p></div>
+{% elif lock == 'submitted' %}
+<div class="card callout"><strong>Submitted{% if sh.submitted_at %} on {{ sh.submitted_at }}{% endif %} — locked.</strong>
+  <p class="section-note">If a mark needs changing, ask the administrator to reopen this sheet.</p></div>
+{% else %}
+<div class="card">
+  <h3>Upload from a file</h3>
+  <p class="section-note">Have the marks in Excel? Upload the .xlsx (or CSV, or a PDF containing a table). It needs an <em>admission_no</em> column and a column named “{{ sh.subject_name }}” or “Score”. The marks load as a draft so you can check them before submitting.</p>
+  <form method="post" action="{{ url_for('mymarks.sheet_import', exam_id=exam.id, subject_id=sh.subject_id, key=sh.stream_key) }}" enctype="multipart/form-data" class="form-row">
+    <div><input type="file" name="file" accept=".csv,.xlsx,.xlsm,.pdf,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Upload</button></div>
+    <div style="flex:0 0 auto;"><a class="btn secondary" href="{{ url_for('mymarks.sheet_template', exam_id=exam.id, subject_id=sh.subject_id, key=sh.stream_key) }}">Download template</a></div>
+  </form>
+</div>
+{% endif %}
+
+<form method="post" id="sheet-form" action="{{ url_for('mymarks.sheet_save', exam_id=exam.id, subject_id=sh.subject_id, key=sh.stream_key) }}">
+<div class="card">
+  <div class="page-head" style="margin-bottom:8px;">
+    <h3 style="margin:0;">Marks <span class="section-note" id="counter"></span></h3>
+    <span class="section-note">Leave a mark blank for a student who did not sit the paper.</span>
+  </div>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th style="width:44px;">#</th><th>Admission no.</th><th>Name</th><th style="width:150px;">Mark (/ {{ sh.out_of }})</th></tr></thead>
+    <tbody>
+    {% for st in students %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ st.admission_no }}</td>
+        <td>{{ st.name }}</td>
+        <td>
+          {% if lock %}{{ ('%g' % marks[st.id]) if st.id in marks else '—' }}
+          {% else %}<input class="mark" type="number" step="any" min="0" max="{{ sh.out_of }}" inputmode="decimal"
+                           name="m_{{ st.id }}" value="{{ ('%g' % marks[st.id]) if st.id in marks else '' }}" style="width:110px;">{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="section-note">There are no students in this class.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if not lock %}
+  <div class="inline-actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+    <button type="submit" name="action" value="save" class="secondary">Save draft</button>
+    <button type="submit" name="action" value="submit" id="submit-btn">Submit final marks</button>
+  </div>
+  <p class="section-note">Submitting locks this sheet. Until you submit, you can keep editing.</p>
+  {% endif %}
+</div>
+</form>
+
+{% if not lock %}
+<script>
+(function () {
+  var inputs = Array.prototype.slice.call(document.querySelectorAll('input.mark'));
+  var counter = document.getElementById('counter');
+  function refresh() {
+    var n = inputs.filter(function (i) { return i.value.trim() !== ''; }).length;
+    counter.textContent = '· ' + n + ' of ' + inputs.length + ' entered';
+  }
+  inputs.forEach(function (el, i) {
+    el.addEventListener('input', refresh);
+    el.addEventListener('keydown', function (e) {           // Enter moves down the column
+      if (e.key === 'Enter') { e.preventDefault(); var next = inputs[i + 1]; if (next) { next.focus(); next.select(); } }
+    });
+  });
+  refresh();
+  document.getElementById('submit-btn').addEventListener('click', function (e) {
+    var blank = inputs.filter(function (i) { return i.value.trim() === ''; }).length;
+    var msg = 'Submit these marks? The sheet will be locked.';
+    if (blank) msg = blank + ' student(s) have no mark and will be treated as not having sat the paper.\n\n' + msg;
+    if (!confirm(msg)) e.preventDefault();
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

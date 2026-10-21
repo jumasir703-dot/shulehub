@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ st.name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('school.students') }}">← Students</a>
+<div class="page-head">
+  <div>
+    <h1>{{ st.name }} {% if st.status != 'active' %}<span class="badge off">{{ statuses[st.status] }}</span>{% endif %}</h1>
+    <p class="section-note">Adm. {{ st.admission_no }} · {{ st.grade_name }}{% if st.stream_name %} · {{ st.stream_name }}{% endif %}</p>
+  </div>
+  <div class="head-actions">
+    {% if can('exams') %}<a class="btn secondary" href="{{ url_for('analytics.student_profile', student_id=st.id) }}">Exam results</a>{% endif %}
+    {% if can('fees') %}<a class="btn secondary" href="{{ url_for('fees.student', student_id=st.id) }}">Fee statement</a>{% endif %}
+  </div>
+</div>
+
+<div class="stat-row">
+  {% if attendance %}
+  <div class="stat"><span>Attendance this year</span><strong class="{{ 'pct-low' if attendance.pct is not none and attendance.pct < 80 }}">{{ attendance.pct if attendance.pct is not none else '—' }}{% if attendance.pct is not none %}<small>%</small>{% endif %}</strong></div>
+  <div class="stat"><span>Days absent</span><strong>{{ attendance.counts.get('A', 0) }}</strong></div>
+  {% endif %}
+  {% if fees %}
+  <div class="stat"><span>Fee balance (KES)</span><strong class="{{ 'owes' if fees.balance > 0 else 'credit' if fees.balance < 0 }}">{{ fees.balance|kes }}</strong></div>
+  {% endif %}
+</div>
+
+<div class="grid-even">
+  <div class="card">
+    <h3>Details</h3>
+    {% if can('students_manage') %}
+    <form method="post" action="{{ url_for('school.student_edit', student_id=st.id) }}">
+      <div class="form-row" style="margin-top:6px;">
+        <div style="flex:2;"><label>Full name</label><input type="text" name="name" value="{{ st.name }}" required></div>
+        <div style="max-width:100px;"><label>Gender</label><select name="gender"><option value="">—</option><option {{ 'selected' if st.gender == 'M' }}>M</option><option {{ 'selected' if st.gender == 'F' }}>F</option></select></div>
+      </div>
+      <div class="form-row">
+        <div><label>Grade</label><select name="grade_id">{% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if g.id == st.grade_id }}>{{ g.name }}</option>{% endfor %}</select></div>
+        <div><label>Stream</label><select name="stream_id"><option value="">(none)</option>{% for s in streams %}<option value="{{ s.id }}" {{ 'selected' if s.id == st.stream_id }}>{{ s.name }}</option>{% endfor %}</select></div>
+      </div>
+      <p class="section-note">Changing the grade here only lists that grade's streams after you save. To move a whole class up a year, use Promotion.</p>
+      <div class="form-row">
+        <div><label>Date of birth</label><input type="date" name="dob" value="{{ st.dob or '' }}"></div>
+        <div><label>Date admitted</label><input type="date" name="admission_date" value="{{ st.admission_date or '' }}"></div>
+      </div>
+      <div class="form-row">
+        <div><label>UPI (NEMIS)</label><input type="text" name="upi" value="{{ st.upi or '' }}"></div>
+        <div style="flex:2;"><label>Notes</label><input type="text" name="notes" value="{{ st.notes or '' }}"></div>
+      </div>
+      <div style="margin-top:14px;"><button type="submit">Save</button></div>
+    </form>
+    {% else %}
+    <dl class="kv">
+      <dt>Gender</dt><dd>{{ st.gender or '—' }}</dd>
+      <dt>Date of birth</dt><dd>{{ st.dob or '—' }}</dd>
+      <dt>Admitted</dt><dd>{{ st.admission_date or '—' }}</dd>
+      <dt>UPI</dt><dd>{{ st.upi or '—' }}</dd>
+      <dt>Notes</dt><dd>{{ st.notes or '—' }}</dd>
+    </dl>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Parents &amp; guardians</h3>
+    {% for gu in guardians %}
+      <div style="padding:10px 0;border-bottom:1px solid var(--line);">
+        <strong>{{ gu.name }}</strong> {% if gu.is_primary %}<span class="badge ok">primary</span>{% endif %}
+        <div class="section-note">{{ gu.relationship or 'Guardian' }}{% if gu.phone %} · <a href="tel:{{ gu.phone }}">{{ gu.phone }}</a>{% endif %}{% if gu.email %} · {{ gu.email }}{% endif %}</div>
+        {% if can('students_manage') %}
+        <div class="inline-actions" style="margin-top:6px;">
+          {% if not gu.is_primary %}<form method="post" action="{{ url_for('school.guardian_primary', guardian_id=gu.id) }}" class="inline-form"><button class="small secondary" type="submit">Make primary</button></form>{% endif %}
+          <form method="post" action="{{ url_for('school.guardian_delete', guardian_id=gu.id) }}" class="inline-form" onsubmit="return confirm('Remove this guardian?')"><button class="small secondary" type="submit">Remove</button></form>
+        </div>
+        {% endif %}
+      </div>
+    {% else %}<p class="section-note">No guardian recorded yet.</p>{% endfor %}
+    {% if can('students_manage') %}
+    <form method="post" action="{{ url_for('school.guardian_add', student_id=st.id) }}" style="margin-top:12px;">
+      <div class="form-row"><div style="flex:2;"><label>Name</label><input type="text" name="name" required></div>
+        <div><label>Relationship</label><select name="relationship">{% for r in relationships %}<option>{{ r }}</option>{% endfor %}</select></div></div>
+      <div class="form-row"><div><label>Phone</label><input type="tel" name="phone"></div><div><label>Email</label><input type="email" name="email"></div>
+        <div style="flex:0;"><button type="submit" class="secondary">Add</button></div></div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if attendance and attendance.recent_absences %}
+<div class="card" style="margin-top:18px;">
+  <h3>Recent absences</h3>
+  <div class="table-scroll"><table><thead><tr><th>Date</th><th>Status</th><th>Note</th></tr></thead><tbody>
+    {% for a in attendance.recent_absences %}<tr><td>{{ a.att_date }}</td><td>{{ 'Excused' if a.status == 'E' else 'Absent' }}</td><td>{{ a.note or '' }}</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endif %}
+
+{% if history %}
+<div class="card" style="margin-top:18px;">
+  <h3>Class history</h3>
+  <div class="table-scroll"><table><thead><tr><th>Date</th><th>What happened</th><th>From</th><th>To</th><th>By</th></tr></thead><tbody>
+    {% for h in history %}<tr><td>{{ h.logged_on }}</td><td>{{ h.action|capitalize }}</td><td>{{ h.from_label }}</td><td>{{ h.to_label }}</td><td>{{ h.logged_by or '' }}</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endif %}
+
+{% if can('students_manage') %}
+<div class="card danger-zone" style="margin-top:18px;">
+  <h3>Enrolment status</h3>
+  <p class="section-note">Students are never deleted from here, so their fee records and exam results stay intact. A student who is not active drops out of class lists, attendance and new invoices.</p>
+  <form method="post" action="{{ url_for('school.student_status', student_id=st.id) }}" class="form-row">
+    <div style="max-width:220px;"><label>Status</label>
+      <select name="status">{% for k, label in statuses.items() %}<option value="{{ k }}" {{ 'selected' if st.status == k }}>{{ label }}</option>{% endfor %}</select></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Update status</button></div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Day Structure{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Day Structure</h1>
+    <p class="section-note">Each level of the school can run its own day: start time, lesson length, number of periods and breaks.
+      Create a profile (for example <em>Pre-Primary</em> or <em>Secondary</em>), then choose which grades use it.
+      Grades with no profile of their own use <strong>Default</strong>.</p>
+  </div>
+</div>
+
+{% if clashes %}
+<div class="card" style="border-left:4px solid #b4531a;">
+  <h3>Double-bookings to fix</h3>
+  <p class="section-note">These teachers or rooms are booked in two classes at overlapping times. This happens when classes run on
+    different day structures. Open the Timetable Builder for one of the classes and move the lesson.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Who</th><th>Day</th><th>Time</th><th>Classes</th></tr></thead>
+    <tbody>{% for c in clashes[:30] %}
+      <tr><td>{{ c.name }} <span class="section-note">({{ c.kind }})</span></td><td>{{ c.day }}</td><td>{{ c.time }}</td><td>{{ c.classes }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% if clashes|length > 30 %}<p class="section-note">…and {{ clashes|length - 30 }} more.</p>{% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Profiles</h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Profile</th><th>Day</th><th>Lessons</th><th>Used by</th><th></th></tr></thead>
+    <tbody>
+    {% for p in profiles %}
+      <tr {% if p.id == current.id %}style="background:#fbf8f0;"{% endif %}>
+        <td><strong>{{ p.name }}</strong>{% if p.is_default %} <span class="section-note">(default)</span>{% endif %}</td>
+        <td>{{ p.start_time }}–{{ p.day_end }}</td>
+        <td>{{ p.periods_per_day }} × {{ p.lesson_minutes }} min{% if p.breaks %}, {{ p.breaks|length }} break{{ 's' if p.breaks|length != 1 }}{% endif %}</td>
+        <td>{% if p.grades %}{{ p.grades|map(attribute='name')|join(', ') }}{% else %}<span class="section-note">no grades yet</span>{% endif %}</td>
+        <td><a class="btn secondary" href="{{ url_for('day_structure_page', profile=p.id) }}">Edit</a></td>
+      </tr>
+    {% endfor %}
+    </tbody></table></div>
+
+  <form method="post" action="{{ url_for('new_day_profile') }}" class="form-row">
+    <div><label>New profile name</label><input type="text" name="name" placeholder="e.g. Pre-Primary" required></div>
+    <div><label>Start from a copy of</label>
+      <select name="copy_from">{% for p in profiles %}<option value="{{ p.id }}" {{ 'selected' if p.id == current.id }}>{{ p.name }}</option>{% endfor %}</select></div>
+    <div style="flex:0 0 auto;"><button type="submit">Add profile</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Edit “{{ current.name }}”</h3>
+  <form method="post" action="{{ url_for('save_day_structure') }}" id="ds-form">
+    <input type="hidden" name="profile_id" value="{{ current.id }}">
+    <div class="form-row" style="margin-top:0;">
+      <div><label>Profile name</label><input type="text" name="name" value="{{ current.name }}" required></div>
+      <div><label>Day starts</label><input type="time" name="start_time" id="ds-start" value="{{ current.start_time }}" required></div>
+      <div><label>Lesson length (minutes)</label><input type="number" name="lesson_minutes" id="ds-len" min="10" value="{{ current.lesson_minutes }}" required></div>
+      <div><label>Lessons per day</label><input type="number" name="periods_per_day" id="ds-n" min="1" value="{{ current.periods_per_day }}" required></div>
+    </div>
+
+    <h4 style="margin:16px 0 4px;">Breaks</h4>
+    <p class="section-note">A break goes <em>after</em> a lesson number. Use as many as you need (tea, lunch, play, prep).</p>
+    <div id="break-rows">
+      {% for b in current.breaks %}
+      <div class="form-row break-row">
+        <div><label>After lesson</label><input type="number" name="after_period[]" min="1" value="{{ b.after_period }}"></div>
+        <div><label>Minutes</label><input type="number" name="duration[]" min="1" value="{{ b.duration_minutes }}"></div>
+        <div><label>Label</label><input type="text" name="label[]" value="{{ b.label or 'Break' }}"></div>
+        <div style="flex:0 0 auto;"><button type="button" class="btn secondary" onclick="this.closest('.break-row').remove();preview()">Remove</button></div>
+      </div>
+      {% endfor %}
+    </div>
+    <p><button type="button" class="btn secondary" id="add-break">+ Add break</button></p>
+
+    <h4 style="margin:16px 0 4px;">Preview of one day</h4>
+    <div class="table-scroll"><table id="preview"><thead><tr><th>Slot</th><th>Time</th></tr></thead><tbody></tbody></table></div>
+
+    <p style="margin-top:14px;"><button type="submit">Save “{{ current.name }}”</button>
+      {% if current.id != default_id %}
+      <button type="submit" class="btn secondary" form="del-form" onclick="return confirm('Delete this profile? Its grades move to the Default profile.')">Delete profile</button>
+      {% endif %}</p>
+  </form>
+  {% if current.id != default_id %}<form id="del-form" method="post" action="{{ url_for('delete_day_profile', pid=current.id) }}"></form>{% endif %}
+</div>
+
+<div class="card">
+  <h3>Which grades use “{{ current.name }}”?</h3>
+  <p class="section-note">Tick the grades and save. Lessons already in the timetable move across by day and lesson number; a lesson
+    whose number doesn’t exist on the new day is removed.</p>
+  <form method="post" action="{{ url_for('assign_day_profile') }}">
+    <input type="hidden" name="profile_id" value="{{ current.id }}">
+    <div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0;">
+      {% for g in grades %}
+        {% set uses = (g.day_profile_id or default_id) == current.id %}
+        <label style="font-weight:normal;"><input type="checkbox" name="grade_ids" value="{{ g.id }}" {{ 'checked' if uses }}> {{ g.name }}
+          {% if not uses %}<span class="section-note">({{ (profiles|selectattr('id','equalto', g.day_profile_id or default_id)|first).name }})</span>{% endif %}</label>
+      {% endfor %}
+    </div>
+    <button type="submit">Save grades for this profile</button>
+  </form>
+  <p class="section-note" style="margin-top:12px;">Shortcut: give every grade of one curriculum this profile.</p>
+  {% set codes = grades|map(attribute='curriculum')|unique|list %}
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    {% for code in codes %}
+    <form method="post" action="{{ url_for('assign_day_profile') }}">
+      <input type="hidden" name="profile_id" value="{{ current.id }}"><input type="hidden" name="curriculum" value="{{ code }}">
+      <button type="submit" class="btn secondary">All {{ code }} grades</button>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+function fmt(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+function preview(){
+  var st=(document.getElementById('ds-start').value||'08:00').split(':'), t=(+st[0])*60+(+st[1]);
+  var len=+document.getElementById('ds-len').value||40, n=+document.getElementById('ds-n').value||0, br={};
+  document.querySelectorAll('.break-row').forEach(function(r){
+    var i=r.querySelectorAll('input'), a=+i[0].value, d=+i[1].value;
+    if(a>=1&&a<n&&d>=1){br[a]=br[a]||{d:0,l:i[2].value||'Break'};br[a].d+=d;br[a].l=i[2].value||br[a].l;}
+  });
+  var rows='';
+  for(var p=1;p<=n;p++){
+    rows+='<tr><td>Lesson '+p+'</td><td>'+fmt(t)+'–'+fmt(t+len)+'</td></tr>'; t+=len;
+    if(br[p]){rows+='<tr style="background:#fbf8f0;"><td>'+br[p].l+'</td><td>'+fmt(t)+'–'+fmt(t+br[p].d)+'</td></tr>'; t+=br[p].d;}
+  }
+  rows+='<tr><td><strong>Day ends</strong></td><td><strong>'+fmt(t)+'</strong></td></tr>';
+  document.querySelector('#preview tbody').innerHTML=rows;
+}
+document.getElementById('add-break').onclick=function(){
+  var d=document.createElement('div'); d.className='form-row break-row';
+  d.innerHTML='<div><label>After lesson</label><input type="number" name="after_period[]" min="1"></div>'+
+    '<div><label>Minutes</label><input type="number" name="duration[]" min="1" value="15"></div>'+
+    '<div><label>Label</label><input type="text" name="label[]" value="Break"></div>'+
+    '<div style="flex:0 0 auto;"><button type="button" class="btn secondary" onclick="this.closest(\'.break-row\').remove();preview()">Remove</button></div>';
+  document.getElementById('break-rows').appendChild(d); preview();
+};
+document.getElementById('ds-form').addEventListener('input',preview);
+preview();
+</script>
+{% endblock %}

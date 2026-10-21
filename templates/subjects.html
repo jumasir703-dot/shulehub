@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Subjects{% endblock %}
+{% block content %}
+<h1>Subjects</h1>
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div>
+      <label>Filter by grade</label>
+      <select name="grade" onchange="this.form.submit()">
+        <option value="(all)" {{ 'selected' if grade_filter=='(all)' }}>(all)</option>
+        {% for g in grades %}
+          <option value="{{ g.name }}" {{ 'selected' if grade_filter==g.name }}>{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+  <table style="margin-top:14px;">
+    <thead><tr><th>Name</th><th>Category</th><th>Grade</th><th>Pathway</th><th>Periods/wk</th><th>Optional group</th><th></th></tr></thead>
+    <tbody>
+      {% for s in subjects %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.category }}</td>
+        <td>{{ s.grade_name }}</td>
+        <td>{{ s.pathway_name or '—' }}</td>
+        <td>
+          <form class="inline-form" method="post" action="{{ url_for('update_subject_periods', subject_id=s.id) }}">
+            <input type="hidden" name="grade_filter" value="{{ grade_filter }}">
+            <input type="number" name="periods_per_week" min="1" max="15"
+                   value="{{ s.periods_per_week }}" style="width:56px;">
+            <button type="submit">Save</button>
+          </form>
+        </td>
+        <td>
+          <form class="inline-form" method="post" action="{{ url_for('set_subject_group', subject_id=s.id) }}">
+            <input type="hidden" name="grade_filter" value="{{ grade_filter }}">
+            <select name="group_id" onchange="this.form.submit()">
+              <option value="" {{ 'selected' if not s.group_id }}>(none — scheduled individually)</option>
+              {% for grp in groups %}
+                <option value="{{ grp.id }}" {{ 'selected' if s.group_id == grp.id }}>{{ grp.name }} ({{ grp.grade_name }}{{ ' - ' + grp.pathway_name if grp.pathway_name }})</option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+        <td>
+          <form class="inline-form" method="post" action="{{ url_for('delete_subject', subject_id=s.id) }}"
+                onsubmit="return confirm('Delete this subject?');">
+            <input type="hidden" name="grade_filter" value="{{ grade_filter }}">
+            <button type="submit" class="danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="section-note">No subjects for this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Optional subject groups</h3>
+  <p class="section-note">
+    Use a group when several subjects are taught at the same time and each student
+    picks just one — e.g. Business Studies, Computer Studies, Home Science, and
+    Agriculture all running in parallel. Give the group one common name (shown on
+    the timetable instead of a single subject), assign subjects to it below, and
+    the auto-generator will always place every subject in the group into the
+    exact same day &amp; period, with its own teacher and room.
+  </p>
+  <table style="margin-top:14px;">
+    <thead><tr><th>Group</th><th>Grade</th><th>Pathway</th><th>Periods/wk</th><th>Subjects</th><th></th></tr></thead>
+    <tbody>
+      {% for grp in groups %}
+      <tr>
+        <td>{{ grp.name }}</td>
+        <td>{{ grp.grade_name }}</td>
+        <td>{{ grp.pathway_name or '—' }}</td>
+        <td>{{ grp.periods_per_week }}</td>
+        <td>{{ grp.member_count }} subject(s)</td>
+        <td>
+          <form class="inline-form" method="post" action="{{ url_for('delete_subject_group', group_id=grp.id) }}"
+                onsubmit="return confirm('Delete this group? Its subjects go back to being scheduled individually.');">
+            <input type="hidden" name="grade_filter" value="{{ grade_filter }}">
+            <button type="submit" class="danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="section-note">No optional-subject groups yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h3 style="margin-top:18px;">Add a group</h3>
+  <form method="post" action="{{ url_for('add_subject_group') }}">
+    <input type="hidden" name="grade_filter" value="{{ grade_filter }}">
+    <div class="form-row">
+      <div>
+        <label>Group name</label>
+        <input type="text" name="name" placeholder="e.g. Electives" required>
+      </div>
+      <div>
+        <label>Grade</label>
+        <select name="grade" id="group-grade-select" required>
+          {% for g in grades %}
+            <option value="{{ g.name }}" data-curriculum="{{ g.curriculum }}">{{ g.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="group-pathway-field">
+        <label>Pathway (CBC only)</label>
+        <select name="pathway">
+          <option value="(none)">(none)</option>
+          {% for p in pathways %}
+            <option value="{{ p.name }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Periods/week</label>
+        <input type="number" name="periods_per_week" min="1" max="15" value="5" style="width:70px;">
+      </div>
+      <div style="flex:0;">
+        <button type="submit">Add Group</button>
+      </div>
+    </div>
+  </form>
+  <p class="section-note">After creating a group, come back to the subjects table above and set each subject's "Optional group" dropdown to it.</p>
+</div>
+
+<div class="card">
+  <h3>Add a subject</h3>
+  <form method="post" action="{{ url_for('add_subject') }}">
+    <div class="form-row">
+      <div>
+        <label>Subject name</label>
+        <input type="text" name="name" required>
+      </div>
+      <div>
+        <label>Grade</label>
+        <select name="grade" id="grade-select" required>
+          {% for g in grades %}
+            <option value="{{ g.name }}" data-curriculum="{{ g.curriculum }}">{{ g.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Category</label>
+        <select name="category">
+          <option value="core">core</option>
+          <option value="pathway">pathway</option>
+          <option value="general" selected>general</option>
+        </select>
+      </div>
+      <div id="pathway-field">
+        <label>Pathway (CBC only)</label>
+        <select name="pathway">
+          <option value="(none)">(none)</option>
+          {% for p in pathways %}
+            <option value="{{ p.name }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Periods/week</label>
+        <input type="number" name="periods_per_week" min="1" max="15" value="5" style="width:70px;">
+      </div>
+      <div style="flex:0;">
+        <button type="submit">Add Subject</button>
+      </div>
+    </div>
+  </form>
+</div>
+<script>
+  // Hide the pathway field when the selected grade isn't CBC-based.
+  const gradeSelect = document.getElementById('grade-select');
+  const pathwayField = document.getElementById('pathway-field');
+  function syncPathwayVisibility(){
+    const opt = gradeSelect.options[gradeSelect.selectedIndex];
+    pathwayField.style.display = (opt && opt.dataset.curriculum === 'CBC') ? '' : 'none';
+  }
+  gradeSelect.addEventListener('change', syncPathwayVisibility);
+  syncPathwayVisibility();
+
+  // Same behavior for the "Add a group" form's grade/pathway fields.
+  const groupGradeSelect = document.getElementById('group-grade-select');
+  const groupPathwayField = document.getElementById('group-pathway-field');
+  function syncGroupPathwayVisibility(){
+    const opt = groupGradeSelect.options[groupGradeSelect.selectedIndex];
+    groupPathwayField.style.display = (opt && opt.dataset.curriculum === 'CBC') ? '' : 'none';
+  }
+  groupGradeSelect.addEventListener('change', syncGroupPathwayVisibility);
+  syncGroupPathwayVisibility();
+</script>
+{% endblock %}

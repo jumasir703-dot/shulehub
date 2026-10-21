@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}View / Export{% endblock %}
+{% block content %}
+<h1>View / Export</h1>
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div>
+      <label>View by</label>
+      <select name="mode" onchange="this.form.submit()">
+        <option value="stream" {{ 'selected' if mode=='stream' }}>Stream</option>
+        <option value="teacher" {{ 'selected' if mode=='teacher' }}>Teacher</option>
+      </select>
+    </div>
+    <div>
+      <label>Select</label>
+      <select name="target" onchange="this.form.submit()">
+        <option value="">— choose —</option>
+        {% if mode == 'stream' %}
+          {% for s in streams %}
+            <option value="{{ s.id }}" {{ 'selected' if target==s.id }}>{{ s.name }} [{{ s.grade_name }}]</option>
+          {% endfor %}
+        {% else %}
+          {% for t in teachers %}
+            <option value="{{ t.id }}" {{ 'selected' if target==t.id }}>{{ t.name }}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+    </div>
+    {% if target %}
+    <div style="flex:0; display:flex; gap:8px;">
+      <a class="btn secondary" href="{{ url_for('export_csv', mode=mode, target=target) }}">Export to CSV</a>
+      <a class="btn secondary" href="{{ url_for('export_csv', mode=mode, target=target, fmt='xlsx') }}">Export to Excel</a>
+      <a class="btn secondary" href="{{ url_for('export_pdf', mode=mode, target=target) }}">Download PDF</a>
+    </div>
+    {% endif %}
+  </form>
+
+  {% if grid %}
+    {% set title, days, display_rows, cells = grid %}
+    <h3 style="margin-top:20px;">{{ title }}</h3>
+    <div style="overflow-x:auto;">
+    <table class="tt-view-table">
+      <thead>
+        <tr>
+          <th>Period</th>
+          {% for d in days %}<th>{{ d }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in display_rows %}
+        {% if row.type == 'break' %}
+        <tr class="break-row">
+          <td colspan="{{ days|length + 1 }}">
+            {{ row.label }} <span class="section-note" style="margin:0;">{{ row.start_time }}–{{ row.end_time }}</span>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td>{{ row.plabel or ('P' ~ row.period_number) }} <span class="section-note" style="margin:0;">{{ row.start_time }}–{{ row.end_time }}</span></td>
+          {% for d in days %}
+            <td>{{ cells.get((d, row.period_number), '—') }}</td>
+          {% endfor %}
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="section-note" style="margin-top:16px;">Choose a stream or teacher above to view their timetable.</p>
+  {% endif %}
+</div>
+{% endblock %}

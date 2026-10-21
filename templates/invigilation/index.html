@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Exam invigilation{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Exam invigilation</h1>
+  <p class="muted">
+    Add each paper. Invigilators needed = candidates ÷ {{ per }} (rounded up). A teacher is only assigned to
+    subjects they teach, in any class, and never to two overlapping papers.
+    {{ n_teachers }} teacher(s) on record.
+  </p>
+</div>
+
+<section class="card">
+  <h2>Add a paper</h2>
+  <form method="post" action="{{ url_for('invigilation.add') }}" class="grid-form">
+    <label>Date <input type="date" name="exam_date" required></label>
+    <label>Start <input type="time" name="start_time" required></label>
+    <label>End <input type="time" name="end_time" required></label>
+    <label>Grade
+      <select name="grade_id" id="grade" required>
+        <option value="">Choose…</option>
+        {% for g in grades %}<option value="{{ g.id }}">{{ g.name }} ({{ counts[g.id] }} students)</option>{% endfor %}
+      </select>
+    </label>
+    <label>Subject
+      <select name="subject_id" id="subject" required>
+        <option value="">Choose grade first…</option>
+        {% for s in subjects %}<option value="{{ s.id }}" data-grade="{{ s.grade_id }}">{{ s.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Venue <input type="text" name="venue" placeholder="e.g. Hall A"></label>
+    <label>Candidates <input type="number" name="candidates" min="0" placeholder="blank = whole grade"></label>
+    <label>Invigilators <input type="number" name="needed" min="1" placeholder="blank = auto"></label>
+    <button class="btn" type="submit">Add paper</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Settings</h2>
+  <form method="post" action="{{ url_for('invigilation.settings') }}" class="grid-form">
+    <label>Candidates per invigilator <input type="number" name="per" min="1" value="{{ per }}"></label>
+    <label>Max sittings per teacher per day (0 = no limit) <input type="number" name="cap" min="0" value="{{ cap }}"></label>
+    <button class="btn" type="submit">Save settings</button>
+  </form>
+</section>
+
+<section class="card">
+  <div class="toolbar">
+    <a class="tab {{ 'active' if view != 'teachers' }}" href="{{ url_for('invigilation.index') }}">By paper</a>
+    <a class="tab {{ 'active' if view == 'teachers' }}" href="{{ url_for('invigilation.index', view='teachers') }}">By teacher</a>
+    <span class="spacer"></span>
+    <form method="post" action="{{ url_for('invigilation.generate_page') }}" style="display:inline">
+      <button class="btn primary" type="submit">Generate invigilation</button></form>
+    <form method="post" action="{{ url_for('invigilation.clear') }}" style="display:inline"
+          onsubmit="return confirm('Clear all assignments?')"><button class="btn" type="submit">Clear</button></form>
+    <a class="btn" href="{{ url_for('invigilation.export_pdf', view=view) }}">PDF</a>
+    <a class="btn" href="{{ url_for('invigilation.export_csv', view=view) }}">CSV</a>
+  </div>
+
+  {% if short_total %}<p class="alert error">{{ short_total }} invigilator slot(s) still unfilled.</p>{% endif %}
+
+  {% if view == 'teachers' %}
+    {% if not roster %}<p class="muted">No duties yet. Add papers and press Generate.</p>{% endif %}
+    {% for r in roster %}
+      <h3>{{ r.name }} {% if r.initials %}<small>({{ r.initials }})</small>{% endif %} — {{ r.duties|length }} duties</h3>
+      <table class="table">
+        <thead><tr><th>Date</th><th>Time</th><th>Paper</th><th>Venue</th></tr></thead>
+        <tbody>{% for p in r.duties %}
+          <tr><td>{{ p.exam_date }}</td><td>{{ p.start_time }}–{{ p.end_time }}</td>
+              <td>{{ p.grade_name }} {{ p.subject_name }}</td><td>{{ p.venue or '' }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    {% endfor %}
+  {% else %}
+    {% if not papers %}<p class="muted">No papers yet.</p>{% else %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Time</th><th>Grade</th><th>Subject</th><th>Venue</th>
+        <th>Cand.</th><th>Need</th><th>Invigilators</th><th></th></tr></thead>
+      <tbody>{% for p in papers %}
+        <tr>
+          <td>{{ p.exam_date }}</td><td>{{ p.start_time }}–{{ p.end_time }}</td>
+          <td>{{ p.grade_name }}</td><td>{{ p.subject_name }}</td><td>{{ p.venue or '' }}</td>
+          <td>{{ p.candidates }}</td><td>{{ p.needed }}</td>
+          <td>{{ p.teachers|join('; ') }}{% if p.short %} <strong class="warn">(short {{ p.short }})</strong>{% endif %}</td>
+          <td><form method="post" action="{{ url_for('invigilation.delete', paper_id=p.id) }}"
+                    onsubmit="return confirm('Delete this paper?')"><button class="btn small" type="submit">✕</button></form></td>
+        </tr>{% endfor %}
+      </tbody>
+    </table>{% endif %}
+  {% endif %}
+</section>
+
+<script>
+  // only show subjects that belong to the chosen grade
+  const grade = document.getElementById('grade'), subject = document.getElementById('subject');
+  function filterSubjects() {
+    let any = false;
+    for (const o of subject.options) {
+      if (!o.dataset.grade) continue;
+      const show = o.dataset.grade === grade.value;
+      o.hidden = !show; if (!show && o.selected) subject.value = ''; any = any || show;
+    }
+    subject.options[0].textContent = grade.value ? (any ? 'Choose subject…' : 'No subjects for this grade') : 'Choose grade first…';
+  }
+  grade.addEventListener('change', filterSubjects); filterSubjects();
+</script>
+{% endblock %}

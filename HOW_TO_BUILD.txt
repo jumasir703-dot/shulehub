@@ -1,0 +1,16 @@
+ShuleHub - full project (with the "See an Example" fix applied)
+================================================================
+1. Unzip this anywhere (a short path such as C:\ShuleHub works best).
+2. Install Python 3.12 from python.org if you don't have it (tick "Add Python to PATH").
+3. Close any running ShuleHub.exe (check Task Manager).
+4. Double-click build_windows.bat. Wait until it says "Done".
+5. Your app is dist\ShuleHub.exe. Open it and try See an Example.
+
+To test without building:  python run_desktop.py
+(first run:  pip install -r requirements-offline.txt)
+
+Your school's records are NOT in this zip. They live in
+C:\Users\<you>\ShuleHubData  and are picked up automatically.
+
+NOTE: license_manager.py contains your passkey-signing secret. Keep this zip
+private and do not upload it to GitHub.

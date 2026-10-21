@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Compile · {{ exam.name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('results.index') }}">← All exams</a>
+<div class="page-head">
+  <div>
+    <h1>{{ exam.name }}
+      {% if published %}<span class="badge ok">Published</span>{% else %}<span class="badge warn">Draft — not published</span>{% endif %}</h1>
+    <p class="section-note">{{ exam.grade_name }} · Term {{ exam.term }}, {{ exam.year }}
+      {% if published %}· published {{ published.published_at }}{% if published.published_by_name %} by {{ published.published_by_name }}{% endif %}{% endif %}</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn secondary" href="{{ url_for('analytics.exam_overview', exam_id=exam.id) }}">Preview results</a>
+    <a class="btn secondary" href="{{ url_for('analytics.merit_list', exam_id=exam.id) }}">Merit list</a>
+    <a class="btn secondary" href="{{ url_for('analytics.subject_analysis', exam_id=exam.id) }}">Subject analysis</a>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><span>Sheets submitted</span><strong>{{ progress.submitted }}<small> / {{ progress.total }}</small></strong></div>
+  <div class="stat"><span>In progress</span><strong>{{ progress.started }}</strong></div>
+  <div class="stat"><span>Students ranked so far</span><strong>{{ n_ranked }}<small> / {{ n_students }}</small></strong></div>
+  <div class="stat"><span>Grade mean so far</span><strong>{{ grade_mean|pct if grade_mean is not none else '—' }}{% if grade_mean is not none %}<small>%</small>{% endif %}</strong></div>
+</div>
+
+{% if progress.no_teacher and not published %}
+<div class="card callout"><strong>{{ progress.no_teacher }} sheet(s) have no teacher allocated.</strong>
+  <p class="section-note">Nobody can enter those marks except staff with full exam access. <a href="{{ url_for('results.allocations') }}">Allocate subjects →</a></p></div>
+{% endif %}
+
+<div class="card">
+  {% if published %}
+  <h3>Results are published</h3>
+  <p class="section-note">Teachers can see these results and every sheet is locked for them. To change a mark, unpublish first.</p>
+  <form method="post" action="{{ url_for('results.unpublish', exam_id=exam.id) }}" onsubmit="return confirm('Unpublish these results? Teachers will no longer be able to see them.')">
+    <button class="secondary" type="submit">Unpublish</button>
+  </form>
+  {% else %}
+  <h3>Publish</h3>
+  <p class="section-note">Publishing releases the results to teachers and locks all marks for this exam. The results are already compiled — nothing else needs to be run.</p>
+  <form method="post" action="{{ url_for('results.publish', exam_id=exam.id) }}" onsubmit="return confirm('Publish the results for {{ exam.name|e }} ({{ exam.grade_name|e }})?')">
+    {% if not progress.complete %}
+    <label class="svc" style="max-width:560px;margin:8px 0;"><input type="checkbox" name="force" value="1">
+      <span><strong>Publish anyway</strong><small>{{ progress.total - progress.submitted }} sheet(s) are not submitted. Missing marks are treated as “did not sit”, which changes totals and positions.</small></span></label>
+    {% endif %}
+    <button type="submit">Publish results</button>
+  </form>
+  {% endif %}
+</div>
+
+{% for (key, name), sheets in by_stream.items() %}
+<div class="card">
+  <h3>{{ exam.grade_name }} · {{ name }}</h3>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Subject</th><th>Teacher(s)</th><th>Marks entered</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for s in sheets %}
+      <tr>
+        <td><strong>{{ s.subject_name }}</strong> <span class="section-note">/ {{ s.out_of }}</span></td>
+        <td>{% if s.teachers %}{{ s.teachers|join(', ') }}{% else %}<span class="badge bad">No teacher</span>{% endif %}</td>
+        <td>{{ s.n_entered }} / {{ s.n_students }}
+          <span class="meter"><i style="width: {{ (100 * s.n_entered / s.n_students)|round|int if s.n_students else 0 }}%"></i></span></td>
+        <td><span class="badge {{ 'ok' if s.status == 'submitted' else ('warn' if s.status == 'in_progress' else 'off') }}">{{ STATUS_LABEL[s.status] }}</span>
+            {% if s.submitted_at %}<div class="section-note">{{ s.submitted_at }}{% if s.submitted_by_name %} · {{ s.submitted_by_name }}{% endif %}</div>{% endif %}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          {% if can_edit_marks %}<a class="btn secondary" href="{{ url_for('analytics.marks_page', exam_id=exam.id, stream_id=s.stream_key) }}">Edit marks</a>{% endif %}
+          {% if s.status == 'submitted' and not published %}
+          <form method="post" action="{{ url_for('results.reopen', exam_id=exam.id) }}" class="inline-form">
+            <input type="hidden" name="subject_id" value="{{ s.subject_id }}"><input type="hidden" name="stream_key" value="{{ s.stream_key }}">
+            <button type="submit" class="small secondary">Reopen</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% else %}
+<div class="card callout"><strong>Nothing to collect yet.</strong>
+  <p class="section-note">This exam has no subjects or its grade has no students. Choose the examined subjects under the exam's Setup, and make sure the students are admitted.</p></div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Setup · {{ exam.name }}{% endblock %}
+{% block content %}
+{% include "analytics/_nav.html" %}
+<form method="post">
+  <div class="card">
+    <h3>Exam details</h3>
+    <div class="form-row" style="margin-top:6px;">
+      <div style="flex:2;"><label>Name</label><input type="text" name="name" value="{{ exam.name }}" required></div>
+      <div><label>Term</label>
+        <select name="term">{% for t in (1,2,3) %}<option {{ 'selected' if exam.term == t }}>{{ t }}</option>{% endfor %}</select></div>
+      <div><label>Year</label><input type="number" name="year" value="{{ exam.year }}"></div>
+      <div><label>Date</label><input type="text" name="exam_date" value="{{ exam.exam_date or '' }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Subjects examined</h3>
+    <p class="section-note">Untick a subject that isn't examined. Set “out of” where a paper isn't marked out of 100 — percentages and grades are always calculated from it.
+      {% if n_marks %}<strong>Unticking a subject deletes its marks for this exam.</strong>{% endif %}</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th style="width:60px;">Include</th><th>Subject</th><th>Type</th><th>Pathway</th><th style="width:120px;">Out of</th></tr></thead>
+      <tbody>
+      {% for s in subjects %}
+        <tr>
+          <td><input type="checkbox" name="include" value="{{ s.id }}" {{ 'checked' if s.out_of }}></td>
+          <td>{{ s.name }}</td><td>{{ s.category }}</td><td>{{ s.pathway_name or '—' }}</td>
+          <td><input type="number" name="out_of_{{ s.id }}" value="{{ s.out_of or 100 }}" min="1" max="1000"></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="section-note">This grade has no subjects yet — add some under <a href="{{ url_for('subjects_page') }}">Subjects</a>.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div style="margin-top:14px;"><button type="submit" name="action" value="save">Save setup</button></div>
+  </div>
+</form>
+
+<div class="card danger-zone">
+  <h3>Delete this exam</h3>
+  <p class="section-note">Removes the exam and all {{ n_marks }} mark(s) entered for it. This cannot be undone.</p>
+  <form method="post" onsubmit="return confirm('Delete this exam and all its marks?');" style="margin-top:10px;">
+    <button type="submit" name="action" value="delete" class="danger">Delete exam</button>
+  </form>
+</div>
+{% endblock %}

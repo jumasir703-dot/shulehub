@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Attendance reports{% endblock %}
+{% block content %}
+<h1>Attendance</h1>
+{% include "attendance/_nav.html" %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Class</label>
+      <select name="class" onchange="this.form.submit()">
+        <option value="">Choose a class…</option>
+        {% for c in classes %}<option value="{{ c.key }}" {{ 'selected' if cls and cls.key == c.key }}>{{ c.label }}</option>{% endfor %}
+      </select></div>
+    <div><label>From</label><input type="date" name="from" value="{{ start }}"></div>
+    <div><label>To</label><input type="date" name="to" value="{{ end }}"></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Show</button></div>
+    {% if cls %}<div style="flex:0;"><a class="btn secondary" href="{{ url_for('attendance.report_csv', **{'class': cls.key, 'from': start, 'to': end}) }}">CSV</a> <a class="btn secondary" href="{{ url_for('attendance.report_csv', fmt='xlsx', **{'class': cls.key, 'from': start, 'to': end}) }}">Excel</a></div>{% endif %}
+  </form>
+</div>
+
+{% if cls %}
+<div class="card">
+  <h3>{{ cls.label }}</h3>
+  <p class="section-note">{{ start }} to {{ end }} · {{ marked_days }} day(s) with attendance recorded · students under {{ low|int }}% are highlighted</p>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Adm</th><th>Name</th><th class="money">Present</th><th class="money">Late</th><th class="money">Absent</th><th class="money">Excused</th><th class="money">Attendance</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td class="section-note">{{ r.admission_no }}</td><td><a href="{{ url_for('school.student_detail', student_id=r.id) }}">{{ r.name }}</a></td>
+        <td class="money">{{ r.P }}</td><td class="money">{{ r.L }}</td><td class="money">{{ r.A }}</td><td class="money">{{ r.E }}</td>
+        <td class="money {{ 'pct-low' if r.pct is not none and r.pct < low }}">{{ (r.pct ~ '%') if r.pct is not none else '—' }}</td></tr>
+    {% else %}<tr><td colspan="7" class="section-note">No students in this class.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

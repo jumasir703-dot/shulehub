@@ -1,0 +1,14 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body %}
+<h1>Sign in</h1>
+{% if error %}<div class="auth-error">{{ error }}</div>{% endif %}
+<form method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div><label for="u">Username</label><input type="text" id="u" name="username" autocomplete="username" autocapitalize="none" autofocus required></div>
+  <div><label for="p">Password</label><input type="password" id="p" name="password" autocomplete="current-password" required></div>
+  <button type="submit">Sign in</button>
+</form>
+<p class="section-note" style="margin-top:16px;">Forgot your password? Ask your school administrator to reset it.</p>
+{% if not desktop_mode %}<p class="section-note"><a href="{{ url_for('get_app_page') }}">Install the app on your phone or computer</a></p>{% endif %}
+{% endblock %}

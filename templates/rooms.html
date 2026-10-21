@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Rooms{% endblock %}
+{% block content %}
+<h1>Rooms</h1>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Name</th><th>Capacity</th><th></th></tr></thead>
+    <tbody>
+      {% for r in rooms %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td>{{ r.capacity or '—' }}</td>
+        <td>
+          <form class="inline-form" method="post" action="{{ url_for('delete_room', room_id=r.id) }}"
+                onsubmit="return confirm('Delete this room?');">
+            <button type="submit" class="danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="section-note">No rooms yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <form method="post" action="{{ url_for('add_room') }}" class="form-row">
+    <div>
+      <label>Room name</label>
+      <input type="text" name="name" required>
+    </div>
+    <div>
+      <label>Capacity</label>
+      <input type="number" name="capacity" min="1">
+    </div>
+    <div style="flex:0;">
+      <button type="submit">Add Room</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

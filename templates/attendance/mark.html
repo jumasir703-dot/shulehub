@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Take register{% endblock %}
+{% block content %}
+<h1>Take register</h1>
+{% include "attendance/_nav.html" %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Class</label>
+      <select name="class" onchange="this.form.submit()">
+        <option value="">Choose a class…</option>
+        {% for c in classes %}<option value="{{ c.key }}" {{ 'selected' if cls and cls.key == c.key }}>{{ c.label }}</option>{% endfor %}
+      </select></div>
+    <div style="max-width:200px;"><label>Date</label><input type="date" name="date" value="{{ day }}" max="{{ today }}" onchange="this.form.submit()"></div>
+  </form>
+</div>
+
+{% if cls %}
+{% if not school_day %}<div class="card callout"><span class="section-note">This isn't one of the school's teaching days. You can still save a register.</span></div>{% endif %}
+{% if already %}<div class="card callout"><span class="section-note">A register for this class and date is already saved. Saving again updates it.</span></div>{% endif %}
+<form method="post" action="{{ url_for('attendance.mark_save') }}" class="card" id="reg">
+  <input type="hidden" name="class" value="{{ cls.key }}">
+  <input type="hidden" name="date" value="{{ day }}">
+  <div class="inline-actions" style="margin-bottom:10px;">
+    <h3 style="margin:0;">{{ cls.label }} — {{ day }}</h3>
+    <button type="button" class="small secondary" id="all-present">Everyone present</button>
+  </div>
+  <div class="table-scroll">
+  <table class="att-table">
+    <thead><tr><th>Adm</th><th>Name</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody>
+    {% for s in students %}
+      <tr>
+        <td class="section-note">{{ s.admission_no }}</td><td>{{ s.name }}</td>
+        <td><div class="att-opts">
+          {% for k, cls_ in (('P','p'),('L','l'),('A','a'),('E','e')) %}
+            <label class="{{ cls_ }}" title="{{ labels[k] }}"><input type="radio" name="st_{{ s.id }}" value="{{ k }}" {{ 'checked' if s.status == k }}><span>{{ k }}</span></label>
+          {% endfor %}
+        </div></td>
+        <td><input type="text" class="att-note" name="note_{{ s.id }}" value="{{ s.note or '' }}" maxlength="120" placeholder="optional"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">P present · L late (counts as present) · A absent · E excused</p>
+  <div class="att-bar"><button type="submit">Save register</button><span class="section-note">{{ students|length }} students</span></div>
+</form>
+<script>
+document.getElementById('all-present').addEventListener('click', function(){
+  document.querySelectorAll('#reg input[type=radio][value=P]').forEach(r => r.checked = true);
+});
+</script>
+{% endif %}
+{% endblock %}

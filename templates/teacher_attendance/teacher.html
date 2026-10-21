@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ teacher.name }} — attendance{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ teacher.name }}</h1>
+  <p class="muted">{{ start.strftime('%d %b %Y') }} to {{ end.strftime('%d %b %Y') }}</p>
+</div>
+
+<section class="card">
+  <div class="toolbar">
+    <a class="btn" href="{{ url_for('teacher_attendance.report', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">← Report</a>
+  </div>
+  {% if not days %}
+    <p class="muted">No attendance marked for this teacher in this period.</p>
+  {% else %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Status</th><th>Arrived</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for d in days %}
+        <tr>
+          <td>{{ d.att_date }}</td>
+          <td>{% if d.status == 'A' %}<strong class="warn">{{ labels[d.status] }}</strong>{% else %}{{ labels.get(d.status, d.status) }}{% endif %}</td>
+          <td>{{ d.time_in or '' }}</td><td>{{ d.note or '' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</section>
+{% endblock %}
