@@ -24,6 +24,7 @@ a = Analysis(
     hiddenimports=[
         'reportlab.graphics.barcode.common',
         'import_files', 'branding', 'permissions', 'exam_flow', 'exam_results', 'demo', 'demo_data',
+        'terms', 'invigilation', 'teacher_attendance', 'lesson_attendance',
     ] + _extra_hidden,
     hookspath=[],
     hooksconfig={},

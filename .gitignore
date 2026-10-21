@@ -1,9 +1,21 @@
+# Python
 __pycache__/
 *.pyc
-timetable.db
-.env
-demo.db
-demo.db-journal
-demo-*.db
-demo-*.db-journal
 venv/
+
+# Data, logs and local files (never commit school data)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.log
+*.bak
+.env
+
+# Build output (rebuilt with build_windows.bat)
+build/
+dist/
+
+# Secret licence-signing key. Copy license_manager.example.py to
+# license_manager.py and set your own SECRET_KEY. Never commit it.
+license_manager.py

@@ -44,6 +44,8 @@ from auth import auth_bp
 from fees import fees_bp, outstanding_total
 from invigilation import invigilation_bp
 from teacher_attendance import teacher_attendance_bp
+from lesson_attendance import lesson_attendance_bp
+from terms import terms_bp
 from onboarding import onboarding_bp
 from exam_results import mymarks_bp, results_bp
 from school import school_bp
@@ -69,6 +71,8 @@ app.register_blueprint(attendance_bp)
 app.register_blueprint(fees_bp)
 app.register_blueprint(invigilation_bp)
 app.register_blueprint(teacher_attendance_bp)
+app.register_blueprint(lesson_attendance_bp)
+app.register_blueprint(terms_bp)
 app.register_blueprint(demo.demo_bp)
 
 # Example mode ("View example"): swaps in the sample school's database for the

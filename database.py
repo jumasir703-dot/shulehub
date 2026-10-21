@@ -690,6 +690,18 @@ def _post_init(conn):
     # School Management tables (users, guardians, attendance, fees, ...) and
     # the extra columns on `students`. Idempotent.
     sm_schema.apply(conn, USE_POSTGRES)
+
+    # Term history, exam invigilation, teacher and lesson attendance tables.
+    # Each is guarded so a problem in one can never stop the app from starting
+    # (every section also creates its own table on first use).
+    for _mod in ("terms", "invigilation", "teacher_attendance", "lesson_attendance"):
+        try:
+            __import__(_mod).apply(conn, USE_POSTGRES)
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
     cur = conn.cursor()
 
     # a) Give every grade a sort_order so the new primary / junior-secondary

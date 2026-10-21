@@ -69,6 +69,7 @@
         {% endif %}
         {% if can('timetable_edit') %}
         <a href="{{ url_for('rules_page') }}" class="{{ 'active' if ep=='rules_page' else '' }}">Scheduling Rules</a>
+        <a href="{{ url_for('terms.index') }}" class="{{ 'active' if ep.startswith('terms.') else '' }}">Terms &amp; Rotation</a>
         {% endif %}
         {% endif %}
 
@@ -103,6 +104,7 @@
         {% if can('attendance') %}
         <a href="{{ url_for('attendance.index') }}" class="{{ 'active' if ep.startswith('attendance.') else '' }}">Attendance</a>
         <a href="{{ url_for('teacher_attendance.index') }}" class="{{ 'active' if ep.startswith('teacher_attendance.') else '' }}">Teacher Attendance</a>
+        <a href="{{ url_for('lesson_attendance.index') }}" class="{{ 'active' if ep.startswith('lesson_attendance.') else '' }}">Lesson Attendance</a>
         {% endif %}
         {% if can('fees') %}
         <a href="{{ url_for('fees.index') }}" class="{{ 'active' if ep.startswith('fees.') else '' }}">Fees &amp; Payments</a>
