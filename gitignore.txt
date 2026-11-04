@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+timetable.db
+.env
+
+# Contains the real license-signing secret -- never commit this.
+# Keep a private backup of it somewhere safe outside git.
+license_manager.py
