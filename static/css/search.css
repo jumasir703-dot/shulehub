@@ -1,0 +1,28 @@
+/* ShuleHub search: results page list + the dropdown under the Search box.
+   Uses the app's CSS variables, so it follows the Lavender theme when that is on. */
+.search-list{ list-style:none; margin:0; padding:0; }
+.search-list li a, .search-list li > span{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px; padding:10px 12px; border-radius:12px;
+  text-decoration:none; color:var(--ink,#222);
+}
+.search-list li a:hover{ background:var(--green-50,#f3f3f3); }
+.s-title{ font-weight:600; }
+.s-sub{ flex-basis:100%; font-size:.85rem; color:var(--muted,#777); }
+.s-badge{ font-size:.72rem; padding:2px 8px; border-radius:999px; background:var(--gold-500,#f6d98b); color:var(--ink,#222); }
+
+.sh-search{ position:relative; display:inline-flex; align-items:center; gap:6px; }
+.sh-search input[type=search]{ min-width:200px; }
+.sh-suggest{
+  position:absolute; top:calc(100% + 8px); right:0; width:min(420px, 92vw); max-height:70vh; overflow:auto;
+  background:var(--paper,#fff); color:var(--ink,#222); border:1px solid var(--line,#ddd); border-radius:16px;
+  box-shadow:0 14px 34px rgba(0,0,0,.18); padding:8px; z-index:1000; text-align:left;
+}
+.sh-suggest[hidden]{ display:none; }
+.sh-suggest .sg-head{ font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted,#777); padding:8px 10px 2px; }
+.sh-suggest a{ display:block; padding:8px 10px; border-radius:10px; text-decoration:none; color:inherit; }
+.sh-suggest a:hover, .sh-suggest a.sg-active{ background:var(--green-50,#f3f3f3); }
+.sh-suggest .sg-title{ font-weight:600; }
+.sh-suggest .sg-sub{ display:block; font-size:.8rem; color:var(--muted,#777); }
+.sh-suggest .sg-badge{ font-size:.68rem; margin-left:6px; padding:1px 7px; border-radius:999px; background:var(--gold-500,#f6d98b); }
+.sh-suggest .sg-all, .sh-suggest .sg-empty{ padding:10px; font-size:.85rem; }
+@media print{ .sh-search{ display:none; } }

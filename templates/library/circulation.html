@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "library/_macros.html" import loan_table with context %}
+{% block title %}Issue / Return{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="grid-even" style="margin-top:0; margin-bottom:18px; align-items:start;">
+
+  {# ------------------------------------------------ ISSUE #}
+  <div class="card">
+    <h3 style="margin-top:0;">Issue a book</h3>
+    {% if not borrower %}
+      <label for="who-q">Who is borrowing?</label>
+      <div><input type="text" id="who-q" class="lib-big" autofocus placeholder="Type a name or admission number"></div>
+      <p class="section-note">Students and teachers are both searched.</p>
+    {% else %}
+      <div class="card lib-person {{ 'warn' if loans|selectattr('is_overdue')|list }}" style="box-shadow:none; margin-bottom:14px;">
+        <strong>{{ borrower.name }}</strong>
+        <span class="lib-quiet"> · {{ borrower.type_label }}{% if borrower.ref %} · {{ borrower.ref }}{% endif %}{% if borrower.sub and borrower.kind == 's' %} · {{ borrower.sub }}{% endif %}</span><br>
+        <span class="lib-quiet">
+          {{ loans|length }} book{{ '' if loans|length == 1 else 's' }} now
+          · <a href="{{ url_for('library.borrower', kind=borrower.kind, borrower_id=borrower.id) }}">full record</a>
+          · <a href="{{ url_for('library.circulation') }}">change</a>
+        </span>
+        {% if loans|selectattr('is_overdue')|list %}<br><span class="badge bad">has overdue books</span>{% endif %}
+      </div>
+      <form method="post" action="{{ url_for('library.issue') }}">
+        <input type="hidden" name="borrower" value="{{ borrower.key }}">
+        <label for="iss-acc">Book accession number (scan or type it, or search by title)</label>
+        <div><input type="text" id="iss-acc" name="accession" class="lib-big" required autofocus autocomplete="off" placeholder="LIB-00012, or start typing the title"></div>
+        <div class="form-row">
+          <div><label>Due date</label><input type="date" name="due_on" value="{{ default_due[borrower.kind] }}" min="{{ today }}"></div>
+        </div>
+        <label style="display:flex; align-items:center; gap:8px; margin-top:12px;">
+          <input type="checkbox" name="override" value="1"> Allow anyway (over the limit, overdue books or unpaid fine)
+        </label>
+        <button type="submit" style="margin-top:14px;">Issue book</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {# ------------------------------------------------ RETURN #}
+  <div class="card">
+    <h3 style="margin-top:0;">Return a book</h3>
+    <form method="post" action="{{ url_for('library.return_book') }}">
+      {% if borrower %}<input type="hidden" name="borrower" value="{{ borrower.key }}">{% endif %}
+      <label for="ret-acc">Accession number (scan or type)</label>
+      <input type="text" id="ret-acc" name="accession" class="lib-big" required autocomplete="off" placeholder="e.g. LIB-00012">
+      <div class="inline-actions" style="margin-top:12px;">
+        <label style="margin:0;"><input type="radio" name="outcome" value="returned" checked> Returned</label>
+        <label style="margin:0;"><input type="radio" name="outcome" value="damaged"> Damaged</label>
+        <label style="margin:0;"><input type="radio" name="outcome" value="lost"> Lost</label>
+      </div>
+      <details style="margin-top:10px;">
+        <summary class="section-note" style="cursor:pointer;">Change the fine or add a note</summary>
+        <div class="form-row">
+          <div><label>Fine (KES), blank = automatic</label><input type="number" name="fine" min="0" step="0.01"></div>
+          <div style="flex:2;"><label>Note</label><input type="text" name="note" maxlength="300" placeholder="e.g. cover torn"></div>
+        </div>
+      </details>
+      <button type="submit" style="margin-top:14px;">Return book</button>
+    </form>
+    <p class="section-note">Late books get an automatic fine
+      ({% if s.fine_per_day > 0 %}KES {{ s.fine_per_day|libmoney }} a day after {{ s.fine_grace_days }} grace day{{ '' if s.fine_grace_days == 1 else 's' }}{% else %}fines are switched off{% endif %}).
+      A lost book is charged at its price{% if s.lost_fee_default %} (KES {{ s.lost_fee_default|libmoney }} if it has none){% endif %}.</p>
+  </div>
+</div>
+
+{% if borrower %}
+<div class="card">
+  <h3 style="margin-top:0;">Books {{ borrower.name }} has now</h3>
+  {{ loan_table(loans, actions=True, show_borrower=False, next_url=url_for('library.circulation', borrower=borrower.key)) }}
+</div>
+{% endif %}
+
+{% include "library/_lookup_js.html" %}
+<script>
+  (function () {
+    var who = document.getElementById('who-q');
+    if (who) libLookup(who, "{{ url_for('library.api_borrowers') }}",
+      function (p) { return '<b>' + libEsc(p.name) + '</b><small>' + libEsc(p.type_label) + ' · ' + libEsc(p.ref ? p.ref + ' · ' : '') + libEsc(p.sub) + '</small>'; },
+      function (p) { window.location = "{{ url_for('library.circulation') }}?borrower=" + encodeURIComponent(p.key); });
+    var acc = document.getElementById('iss-acc');
+    if (acc) libLookup(acc, "{{ url_for('library.api_copies') }}",
+      function (c) { return '<b>' + libEsc(c.title) + '</b><small>' + libEsc(c.accession) + ' · ' + libEsc(c.author ? c.author + ' · ' : '') + libEsc(c.state) + '</small>'; },
+      function (c) { acc.value = c.accession; acc.focus(); });
+    var ret = document.getElementById('ret-acc');
+    if (ret) libLookup(ret, "{{ url_for('library.api_copies') }}",
+      function (c) { return '<b>' + libEsc(c.title) + '</b><small>' + libEsc(c.accession) + ' · ' + libEsc(c.state) + '</small>'; },
+      function (c) { ret.value = c.accession; ret.focus(); });
+  })();
+</script>
+{% endblock %}

@@ -36,6 +36,7 @@ from flask import (
     Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for,
 )
 
+import branding
 import database as db
 import demo_data
 
@@ -156,6 +157,27 @@ def _reason(exc):
     return f"{type(exc).__name__}: {text[:160]}" if text else type(exc).__name__
 
 
+def _logo_for_example():
+    """The logo the example school prints with, as PNG bytes (or None).
+
+    The example runs on its own throw-away database, which starts with no logo,
+    so without this every example printout came out logo-less. We use the
+    school's own logo when one has been uploaded; otherwise ShuleHub's own icon,
+    so example printouts always carry a logo. Must be called while the REAL
+    database is selected (the caller is inside `use_db_path(None)`)."""
+    try:
+        found = branding.get_logo()
+        if found:
+            return found[0]
+        icon = os.path.join(current_app.static_folder, "icons", "icon-512.png")
+        with open(icon, "rb") as handle:
+            png, _error = branding.prepare_logo(handle.read())
+        return png
+    except Exception:
+        current_app.logger.exception("Could not pick a logo for the example school")
+        return None
+
+
 # ---------------------------------------------------------------- request hooks
 def activate():
     """before_request — registered ahead of the login gate in app.py, so even
@@ -226,7 +248,7 @@ def start():
             if not row:
                 flash("Sign in first, then open the example.", "error")
                 return redirect(url_for("auth.login"))
-            demo_data.build(new_path, dict(row))
+            demo_data.build(new_path, dict(row), logo_png=_logo_for_example())
         except Exception as exc:
             current_app.logger.exception("Could not build the example school")
             _remove(new_path)           # never leave a half-built file behind

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Library reports{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Lists to print or download</h3>
+  <div class="grid-even" style="margin-top:0; margin-bottom:18px;">
+    <div>
+      <strong>Overdue books</strong>
+      <p class="section-note">{{ n_overdue }} overdue, with the guardian's phone number for follow-up.</p>
+      <div class="inline-actions"><a class="btn small" target="_blank" href="{{ url_for('library.overdue_pdf') }}">PDF</a>
+        <a class="btn small secondary" href="{{ url_for('library.overdue_csv') }}">CSV</a></div>
+    </div>
+    <div>
+      <strong>Library clearance</strong>
+      <p class="section-note">Students who still hold a book or owe a fine, for end-of-term or leaving clearance.</p>
+      <form method="get" action="{{ url_for('library.clearance') }}" class="inline-actions">
+        <select name="grade" style="width:auto;"><option value="">All grades</option>{% for g in grades %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select>
+        <button type="submit" class="small">Show</button>
+      </form>
+    </div>
+    <div>
+      <strong>Stock list</strong>
+      <p class="section-note">Every copy with its status and who has it. Useful for stock-taking.</p>
+      <div class="inline-actions"><a class="btn small secondary" href="{{ url_for('library.inventory_csv') }}">CSV</a>
+        <a class="btn small secondary" href="{{ url_for('library.loans_csv', status='all') }}">All loans (CSV)</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-even" style="margin-top:0; margin-bottom:18px;">
+  <div class="card">
+    <h3 style="margin-top:0;">Most borrowed books</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Book</th><th class="money">Loans</th></tr></thead>
+      <tbody>{% for r in top_books %}<tr><td><a href="{{ url_for('library.book_detail', book_id=r.id) }}">{{ r.title }}</a>{% if r.author %}<br><span class="lib-quiet">{{ r.author }}</span>{% endif %}</td><td class="money">{{ r.n }}</td></tr>
+      {% else %}<tr><td colspan="2" class="section-note">No loans yet.</td></tr>{% endfor %}</tbody></table></div>
+    {% if never %}<p class="section-note">{{ never }} title{{ '' if never == 1 else 's' }} {{ 'has' if never == 1 else 'have' }} never been borrowed.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;">Top readers</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Student</th><th class="money">Books borrowed</th></tr></thead>
+      <tbody>{% for r in top_readers %}<tr><td><a href="{{ url_for('library.borrower', kind='s', borrower_id=r.id) }}">{{ r.name }}</a> <span class="lib-quiet">{{ r.admission_no }}</span></td><td class="money">{{ r.n }}</td></tr>
+      {% else %}<tr><td colspan="2" class="section-note">No loans yet.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+</div>
+
+<div class="grid-even" style="margin-top:0; margin-bottom:18px;">
+  <div class="card">
+    <h3 style="margin-top:0;">Loans by class</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Class</th><th class="money">Loans</th></tr></thead>
+      <tbody>{% for r in by_class %}<tr><td>{{ r.cls }}</td><td class="money">{{ r.n }}</td></tr>
+      {% else %}<tr><td colspan="2" class="section-note">No loans to students yet.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;">Loans by month</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Month</th><th class="money">Loans</th></tr></thead>
+      <tbody>{% for r in by_month %}<tr><td>{{ r.month }}</td><td class="money">{{ r.n }}</td></tr>
+      {% else %}<tr><td colspan="2" class="section-note">No loans yet.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Collection by category</h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Category</th><th class="money">Titles</th><th class="money">Copies</th></tr></thead>
+    <tbody>{% for r in by_category %}<tr><td>{{ r.cat }}</td><td class="money">{{ r.titles }}</td><td class="money">{{ r.copies }}</td></tr>
+    {% else %}<tr><td colspan="3" class="section-note">No books yet.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}

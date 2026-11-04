@@ -1,0 +1,17 @@
+ShuleHub Library module - install
+==================================
+1. Extract this zip INTO your ShuleHub folder (the one that has app.py).
+   Say yes to merge folders. You get library.py, apply_library.py and templates\library\.
+2. Open a terminal in that folder and run:
+       python apply_library.py
+   It adds the library to app.py, permissions.py, auth.py and templates\base.html
+   (backups: *.library.bak). Safe to run twice. If it can't place a line it changes
+   nothing and tells you which one.
+3. Test:   python run_desktop.py      (or python app.py)
+   You'll see a "Library" section in the menu.
+4. Rebuild the Windows app:   build_windows.bat
+5. Give the librarian a login: Roles & Access -> tick "Library" for the role.
+   (Every signed-in staff member can search the catalogue; only "Library" can issue, return, add books, see fines and reports.)
+
+First steps in the app: Library -> Settings (loan days, fine per day), then Catalogue -> Import books (CSV/Excel) or Add a book.
+Print barcode labels from a book page ("Print labels"). A barcode scanner works in the Issue / Return boxes.

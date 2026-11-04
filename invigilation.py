@@ -37,6 +37,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 import branding
 import database as db
+import theme
 import exam_analysis as ea
 
 invigilation_bp = Blueprint("invigilation", __name__, url_prefix="/exams/invigilation")
@@ -384,11 +385,11 @@ def export_pdf():
     else:
         t = Table(data, repeatRows=1, colWidths=[(page[0] - 24 * mm) / len(head)] * len(head))
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#103524")),
+            ("BACKGROUND", (0, 0), (-1, 0), theme.GREEN_900),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white), ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 8), ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e3dcc9")),
+            ("FONTSIZE", (0, 0), (-1, 0), 8), ("GRID", (0, 0), (-1, -1), 0.5, theme.LINE),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#fbf8f0")])]))
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, theme.ROW_ALT])]))
         story.append(t)
     doc.build(story)
     name = "Invigilation_by_teacher.pdf" if view == "teachers" else "Invigilation_timetable.pdf"

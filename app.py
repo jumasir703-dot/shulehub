@@ -27,12 +27,15 @@ from flask import (
 )
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from xml.sax.saxutils import escape as xml_escape
 
 import curriculum
 import database as db
+import theme
 import day_profiles
 import scheduler
 import auth
@@ -42,10 +45,12 @@ from analytics import analytics_bp
 from attendance import attendance_bp
 from auth import auth_bp
 from fees import fees_bp, outstanding_total
+from remedial import remedial_bp
 from invigilation import invigilation_bp
 from teacher_attendance import teacher_attendance_bp
 from lesson_attendance import lesson_attendance_bp
 from terms import terms_bp
+from master import master_bp
 from onboarding import onboarding_bp
 from exam_results import mymarks_bp, results_bp
 from school import school_bp
@@ -69,11 +74,22 @@ app.register_blueprint(results_bp)
 app.register_blueprint(school_bp)
 app.register_blueprint(attendance_bp)
 app.register_blueprint(fees_bp)
+app.register_blueprint(remedial_bp)
 app.register_blueprint(invigilation_bp)
 app.register_blueprint(teacher_attendance_bp)
 app.register_blueprint(lesson_attendance_bp)
 app.register_blueprint(terms_bp)
+app.register_blueprint(master_bp)
 app.register_blueprint(demo.demo_bp)
+
+# Library and Messages are loaded defensively: if one of them can't start (a missing
+# file, say) the rest of ShuleHub still runs, the menu hides that section, and the
+# reason is printed in the console / app.log instead of every page crashing.
+for _module, _blueprint in (("library", "library_bp"), ("messaging", "msg_bp")):
+    try:
+        app.register_blueprint(getattr(__import__(_module), _blueprint))
+    except Exception as _err:
+        print(f"[ShuleHub] The {_module} section was not loaded: {type(_err).__name__}: {_err}")
 
 # Example mode ("View example"): swaps in the sample school's database for the
 # request. It must run FIRST, ahead of the login gate, so that even the lookup
@@ -100,6 +116,7 @@ def inject_school():
     return {
         "school": db.get_school_settings(),
         "curriculum_labels": curriculum.CURRICULA,
+        "loaded_modules": set(app.blueprints),      # lets the menu show only sections that started
     }
 
 
@@ -1069,6 +1086,27 @@ def _rows_with_breaks(periods):
     return rows
 
 
+class _Piece:
+    """One lesson inside a timetable cell: the subject, and who/where."""
+    __slots__ = ("subject", "detail", "text")
+
+    def __init__(self, subject, detail, text):
+        self.subject, self.detail, self.text = subject, detail, text
+
+
+class _Cell(str):
+    """A timetable cell. As text it is the familiar 'A (x, y) / B (x, y)' line,
+    so the CSV and Excel exports are unchanged; `.pieces` keeps each lesson
+    separate so the page and the PDF can lay them out one under another
+    (subject names such as "Kiswahili / KSL" contain " / " themselves, so the
+    text cannot be split reliably after the fact)."""
+
+    def __new__(cls, pieces):
+        obj = super().__new__(cls, " / ".join(p.text for p in pieces))
+        obj.pieces = pieces
+        return obj
+
+
 def _grid_data(mode, target):
     days = db.get_active_days()
     # A class uses its grade's day profile. A teacher can serve classes on
@@ -1101,8 +1139,11 @@ def _grid_data(mode, target):
         cells = {}
         for r in rows:
             key = (r["day"], r["period_number"])
-            piece = f"{r['subject_name']} ({r['teacher_name'] or '-'}, {r['room_name'] or '-'})"
-            cells[key] = f"{cells[key]} / {piece}" if key in cells else piece
+            detail = " \u00b7 ".join(x for x in (r["teacher_name"], r["room_name"]) if x)
+            piece = _Piece(r["subject_name"], detail,
+                           f"{r['subject_name']} ({r['teacher_name'] or '-'}, {r['room_name'] or '-'})")
+            cells.setdefault(key, []).append(piece)
+        cells = {k: _Cell(v) for k, v in cells.items()}
         title = f"{db.get_school_settings()['name']} — Timetable for {stream['name']}"
     else:
         teacher = db.fetch_one("SELECT * FROM teachers WHERE id=?", (target,))
@@ -1123,8 +1164,11 @@ def _grid_data(mode, target):
         cells = {}
         for r in rows:
             key = (r["day"], r["start_time"] if merged else r["period_number"])
-            piece = f"{r['subject_name']} - {r['stream_name']} ({r['room_name'] or '-'})"
-            cells[key] = f"{cells[key]} / {piece}" if key in cells else piece
+            detail = " \u00b7 ".join(x for x in (r["stream_name"], r["room_name"]) if x)
+            piece = _Piece(r["subject_name"], detail,
+                           f"{r['subject_name']} - {r['stream_name']} ({r['room_name'] or '-'})")
+            cells.setdefault(key, []).append(piece)
+        cells = {k: _Cell(v) for k, v in cells.items()}
         title = f"{db.get_school_settings()['name']} — Timetable for {teacher['name']}"
 
     return title, days, display_rows, cells
@@ -1177,6 +1221,51 @@ def export_csv():
     )
 
 
+def _tt_pdf_styles(many, scale=1.0):
+    """Paragraph styles for timetable cells. Cells holding several lessons at
+    once (elective blocks) use smaller type so they stay compact; `scale`
+    shrinks everything a little further when a timetable is too tall to fit
+    one page."""
+    big, small = ((7.2, 6.4) if many else (8.6, 7.2))
+    big, small = big * scale, small * scale
+    base = dict(fontName="Helvetica", alignment=TA_CENTER, textColor=theme.INK)
+    return {
+        "subject": ParagraphStyle("tt_subject", fontSize=big, leading=big + 1.6, **base),
+        "detail": ParagraphStyle("tt_detail", fontSize=small, leading=small + 1.6,
+                                 **{**base, "textColor": theme.PORTAL_MUTED}),
+        "multi": ParagraphStyle("tt_multi", fontSize=small + 0.4, leading=small + 2.2, **base),
+        "empty": ParagraphStyle("tt_empty", fontSize=8, leading=10, **{**base, "textColor": theme.PORTAL_LINE}),
+        "period": ParagraphStyle("tt_period", fontSize=8.5, leading=10.5, **{**base, "textColor": theme.PORTAL_NAVY}),
+        "school": ParagraphStyle("tt_school", fontName="Helvetica-Bold", fontSize=15, leading=18,
+                                 alignment=TA_CENTER, textColor=theme.PORTAL_NAVY),
+        "sub": ParagraphStyle("tt_sub", fontName="Helvetica", fontSize=10, leading=13,
+                              alignment=TA_CENTER, textColor=theme.PORTAL_MUTED),
+    }
+
+
+def _tt_cell_flowables(cell, st):
+    """What goes inside one timetable cell. Everything is a Paragraph, so long
+    text wraps inside its cell instead of running into the next one."""
+    if not cell:
+        return [Paragraph("\u2014", st["empty"])]
+    pieces = cell.pieces
+    if len(pieces) == 1:
+        p = pieces[0]
+        out = [Paragraph(f"<b>{xml_escape(p.subject)}</b>", st["subject"])]
+        if p.detail:
+            out.append(Paragraph(xml_escape(p.detail), st["detail"]))
+        return out
+    out = []
+    for i, p in enumerate(pieces):
+        if i:
+            out.append(HRFlowable(width="100%", thickness=0.3, color=theme.PORTAL_LINE, spaceBefore=1, spaceAfter=1))
+        text = f"<b>{xml_escape(p.subject)}</b>"
+        if p.detail:
+            text += f' <font color="{theme.css("PORTAL_MUTED")}">{xml_escape(p.detail)}</font>'
+        out.append(Paragraph(text, st["multi"]))
+    return out
+
+
 @app.route("/export.pdf")
 def export_pdf():
     mode = request.args.get("mode", "stream")
@@ -1187,60 +1276,108 @@ def export_pdf():
     title, days, display_rows, cells = data
 
     page_size = landscape(A4)
-    left_margin = right_margin = 14 * mm
-    top_margin = bottom_margin = 12 * mm
+    left_margin = right_margin = 12 * mm
+    top_margin, bottom_margin = 10 * mm, 14 * mm
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=page_size,
         leftMargin=left_margin, rightMargin=right_margin,
         topMargin=top_margin, bottomMargin=bottom_margin,
+        title=title,
     )
-    styles = getSampleStyleSheet()
-    story = branding.logo_story() + [Paragraph(title, styles["Title"]), Spacer(1, 10)]
-
-    # Build the table body: a header row, then one row per lesson period or
-    # break marker (mirrors the on-screen grid and the CSV export).
-    table_data = [["Period"] + days]
-    break_row_indices = []
-    for r in display_rows:
-        row_index = len(table_data)  # index this row will land at in table_data
-        if r["type"] == "break":
-            label = f"{r['label']}  ({r['start_time']}\u2013{r['end_time']})"
-            table_data.append([label] + [""] * len(days))
-            break_row_indices.append(row_index)
-        else:
-            pnum = r["period_number"]
-            period_label = f"{r.get('plabel') or 'P' + str(pnum)}\n{r['start_time']}-{r['end_time']}"
-            row = [period_label] + [cells.get((d, pnum), "\u2014") for d in days]
-            table_data.append(row)
-
+    many = any(len(getattr(c, "pieces", ())) > 2 for c in cells.values())
+    school, _sep, subtitle = title.partition(" \u2014 ")
+    logo = branding.get_logo()
     usable_width = page_size[0] - left_margin - right_margin
-    period_col_width = 26 * mm
-    day_col_width = (usable_width - period_col_width) / len(days)
-    col_widths = [period_col_width] + [day_col_width] * len(days)
+    usable_height = page_size[1] - top_margin - bottom_margin - 2 * mm
 
-    table = Table(table_data, colWidths=col_widths, repeatRows=1)
+    def build(scale, logo_mm, pad):
+        """The whole page (heading + table) at one density level."""
+        st = _tt_pdf_styles(many, scale)
+        head = []
+        img = branding.logo_flowable(max_height_mm=logo_mm, max_width_mm=45, found=logo)
+        if img:
+            head += [img, Spacer(1, 1 * mm)]
+        head += [
+            Paragraph(xml_escape(school.upper()), st["school"]),
+            Paragraph(xml_escape((subtitle or "Timetable").upper()), st["sub"]),
+            HRFlowable(width="100%", thickness=1.6, color=theme.PORTAL_NAVY, spaceBefore=3, spaceAfter=6),
+        ]
 
-    style_cmds = [
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#103524")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e3dcc9")),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#fbf8f0")]),
-    ]
-    for idx in break_row_indices:
-        style_cmds.append(("SPAN", (0, idx), (len(days), idx)))
-        style_cmds.append(("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#f4e6c6")))
-        style_cmds.append(("FONTNAME", (0, idx), (-1, idx), "Helvetica-Bold"))
-        style_cmds.append(("TEXTCOLOR", (0, idx), (-1, idx), colors.HexColor("#103524")))
+        # Table body: a header row, then one row per lesson period or break
+        # marker (mirrors the on-screen grid and the CSV export).
+        table_data = [["PERIOD"] + [d.upper() for d in days]]
+        break_row_indices = []
+        for r in display_rows:
+            row_index = len(table_data)
+            if r["type"] == "break":
+                table_data.append([f"{r['label'].upper()}   {r['start_time']}\u2013{r['end_time']}"] + [""] * len(days))
+                break_row_indices.append(row_index)
+            else:
+                pnum = r["period_number"]
+                label = (f"<b>{xml_escape(str(r.get('plabel') or 'P' + str(pnum)))}</b><br/>"
+                         f"<font size={6.8 * scale:.1f} color=\"{theme.css('PORTAL_MUTED')}\">{r['start_time']}\u2013{r['end_time']}</font>")
+                table_data.append([Paragraph(label, st["period"])] +
+                                  [_tt_cell_flowables(cells.get((d, pnum)), st) for d in days])
 
-    table.setStyle(TableStyle(style_cmds))
-    story.append(table)
-    doc.build(story)
+        period_col_width = 24 * mm
+        day_col_width = (usable_width - period_col_width) / len(days)
+        table = Table(table_data, colWidths=[period_col_width] + [day_col_width] * len(days), repeatRows=1)
+        style_cmds = [
+            ("BACKGROUND", (0, 0), (-1, 0), theme.PORTAL_NAVY),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 8.5 * scale),
+            ("TOPPADDING", (0, 0), (-1, 0), 5), ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
+            ("BACKGROUND", (0, 1), (0, -1), theme.PORTAL_TINT),
+            ("GRID", (0, 0), (-1, -1), 0.6, theme.PORTAL_LINE),
+            ("BOX", (0, 0), (-1, -1), 1.0, theme.PORTAL_NAVY),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("TOPPADDING", (0, 1), (-1, -1), pad), ("BOTTOMPADDING", (0, 1), (-1, -1), pad),
+            ("LEFTPADDING", (0, 1), (-1, -1), 3), ("RIGHTPADDING", (0, 1), (-1, -1), 3),
+        ]
+        for idx in break_row_indices:
+            style_cmds += [
+                ("SPAN", (0, idx), (len(days), idx)),
+                ("BACKGROUND", (0, idx), (-1, idx), theme.PORTAL_BREAK),
+                ("FONTNAME", (0, idx), (-1, idx), "Helvetica-Bold"),
+                ("FONTSIZE", (0, idx), (-1, idx), 7.5 * scale),
+                ("TEXTCOLOR", (0, idx), (-1, idx), theme.PORTAL_NAVY),
+            ]
+        table.setStyle(TableStyle(style_cmds))
+        return head, table
+
+    # Try the roomiest layout first; step down until the timetable fits one
+    # page. If even the tightest does not fit, it simply runs on to a second
+    # page (the header row repeats).
+    levels = ((1.0, 18, 3), (0.94, 13, 2.4), (0.88, 11, 1.8), (0.82, 9, 1.2), (0.76, 8, 0.8))
+    for scale, logo_mm, pad in levels:
+        head, table = build(scale, logo_mm, pad)
+        total = sum(f.wrap(usable_width, usable_height)[1] + getattr(f, "spaceBefore", 0) + getattr(f, "spaceAfter", 0)
+                    for f in head)
+        total += table.wrap(usable_width, usable_height)[1]
+        if total <= usable_height:
+            break
+    else:
+        head, table = build(*levels[1])     # cannot fit one page: keep readable type and run on to page 2
+    story = head + [table]
+
+    printed = date.today().strftime("%d %b %Y")
+
+    def footer(canvas, document):
+        canvas.saveState()
+        canvas.setStrokeColor(theme.PORTAL_LINE)
+        canvas.setLineWidth(0.5)
+        canvas.line(left_margin, 9 * mm, page_size[0] - right_margin, 9 * mm)
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(theme.PORTAL_MUTED)
+        canvas.drawString(left_margin, 5.5 * mm, f"Generated by ShuleHub on {printed}")
+        canvas.drawRightString(page_size[0] - right_margin, 5.5 * mm, f"Page {document.page}")
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
     buf.seek(0)
 
     return Response(

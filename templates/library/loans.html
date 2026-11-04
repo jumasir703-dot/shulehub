@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "library/_macros.html" import loan_table, pager with context %}
+{% block title %}Library loans{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Show</label>
+      <select name="status" onchange="this.form.submit()">
+        {% for key, label in (('open', 'On loan now'), ('overdue', 'Overdue'), ('returned', 'Returned'), ('lost', 'Lost'), ('all', 'Everything')) %}
+        <option value="{{ key }}" {{ 'selected' if status == key }}>{{ label }}</option>{% endfor %}
+      </select></div>
+    <div style="flex:2;"><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Book, accession no, student or admission no"></div>
+    <div><label>Issued from</label><input type="date" name="from" value="{{ start }}"></div>
+    <div><label>to</label><input type="date" name="to" value="{{ end }}"></div>
+    <div style="flex:0;"><button type="submit" class="secondary">Show</button></div>
+    <div style="flex:0;"><a class="btn secondary" href="{{ url_for('library.loans_csv', **qs(page=None)) }}">CSV</a></div>
+  </form>
+  <p class="section-note">{{ total }} loan{{ '' if total == 1 else 's' }}</p>
+  {{ loan_table(rows) }}
+  {{ pager(page, pages, qs) }}
+</div>
+{% endblock %}

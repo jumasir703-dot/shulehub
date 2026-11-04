@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "library/_macros.html" import loan_table with context %}
+{% block title %}{{ b.title }}{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="card">
+  <h2 style="margin:0 0 4px;">{{ b.title }}</h2>
+  <p class="section-note" style="margin:0;">
+    {% if b.author %}by {{ b.author }}{% endif %}
+    {% if b.category %} · {{ b.category }}{% endif %}{% if b.subject %} · {{ b.subject }}{% endif %}
+    {% if b.shelf %} · Shelf {{ b.shelf }}{% endif %}
+  </p>
+  <div class="inline-actions" style="margin-top:12px;">
+    <span class="badge">{{ b.copies }} cop{{ 'y' if b.copies == 1 else 'ies' }}</span>
+    {% if b.available > 0 %}<span class="badge ok">{{ b.available }} available</span>{% elif b.copies %}<span class="badge warn">all out</span>{% endif %}
+    {% if b.on_loan %}<span class="badge warn">{{ b.on_loan }} on loan</span>{% endif %}
+    {% if not b.active %}<span class="badge off">withdrawn</span>{% endif %}
+    {% if is_librarian %}<a class="btn small secondary" target="_blank" href="{{ url_for('library.labels_pdf', book=b.id) }}">Print labels</a>{% endif %}
+  </div>
+  <dl class="kv">
+    {% if b.isbn %}<dt>ISBN</dt><dd>{{ b.isbn }}</dd>{% endif %}
+    {% if b.publisher %}<dt>Publisher</dt><dd>{{ b.publisher }}{% if b.year %}, {{ b.year }}{% endif %}{% if b.edition %} · {{ b.edition }} ed.{% endif %}</dd>{% endif %}
+    {% if b.price %}<dt>Price</dt><dd>KES {{ b.price|libmoney }}</dd>{% endif %}
+    {% if b.notes %}<dt>Notes</dt><dd>{{ b.notes }}</dd>{% endif %}
+  </dl>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Copies</h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Accession no</th><th>Status</th>{% if is_librarian %}<th>Held by</th><th></th>{% endif %}</tr></thead>
+    <tbody>
+    {% for c in copies %}
+      <tr>
+        <td><strong>{{ c.accession_no }}</strong>{% if c.notes %}<br><span class="lib-quiet">{{ c.notes }}</span>{% endif %}</td>
+        <td>
+          {% if c.on_loan %}<span class="badge {{ 'bad' if c.overdue else 'warn' }}">on loan{% if is_librarian %} · due {{ c.due_on|libdate }}{% endif %}</span>
+          {% elif c.status == 'available' %}<span class="badge ok">available</span>
+          {% elif c.status == 'withdrawn' %}<span class="badge off">withdrawn</span>
+          {% else %}<span class="badge bad">{{ status_labels[c.status]|lower }}</span>{% endif %}
+        </td>
+        {% if is_librarian %}
+        <td>{% if c.on_loan %}
+              {% if c.student_id %}<a href="{{ url_for('library.borrower', kind='s', borrower_id=c.student_id) }}">{{ c.holder }}</a>
+              {% elif c.teacher_id %}<a href="{{ url_for('library.borrower', kind='t', borrower_id=c.teacher_id) }}">{{ c.holder }}</a>
+              {% else %}{{ c.holder }}{% endif %}
+            {% endif %}</td>
+        <td>
+          {% if c.on_loan %}
+          <form class="lib-inline" method="post" action="{{ url_for('library.return_book') }}">
+            <input type="hidden" name="accession" value="{{ c.accession_no }}"><input type="hidden" name="next" value="{{ url_for('library.book_detail', book_id=b.id) }}">
+            <button type="submit" class="small">Return</button></form>
+          {% else %}
+          <form class="lib-fine-form" method="post" action="{{ url_for('library.copy_status', copy_id=c.id) }}">
+            <select name="status" style="width:auto;">{% for st in statuses %}<option value="{{ st }}" {{ 'selected' if st == c.status }}>{{ status_labels[st] }}</option>{% endfor %}</select>
+            <button type="submit" class="small secondary">Set</button>
+          </form>
+          <form class="lib-inline" method="post" action="{{ url_for('library.copy_delete', copy_id=c.id) }}" onsubmit="return confirm('Delete copy {{ c.accession_no }}?');">
+            <button type="submit" class="small secondary">Delete</button></form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="section-note">This title has no copies yet.</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+
+  {% if is_librarian and b.active %}
+  <form method="post" action="{{ url_for('library.copies_add', book_id=b.id) }}" class="form-row">
+    <div style="flex:0 0 130px; min-width:120px;"><label>Add copies</label><input type="number" name="count" min="1" max="500" value="1"></div>
+    <div style="flex:2;"><label>or your own accession numbers</label><input type="text" name="accessions" placeholder="Optional. Separate with spaces or commas"></div>
+    <div style="flex:0;"><button type="submit">Add</button></div>
+  </form>
+  {% endif %}
+</div>
+
+{% if is_librarian %}
+<details class="card">
+  <summary style="cursor:pointer; font-weight:700;">Edit book details</summary>
+  <form method="post" action="{{ url_for('library.book_edit', book_id=b.id) }}">
+    {% set v = b %}
+    {% include "library/_book_fields.html" %}
+    <button type="submit" style="margin-top:16px;">Save changes</button>
+  </form>
+</details>
+
+<div class="card">
+  <h3 style="margin-top:0;">Loan history</h3>
+  {{ loan_table(history, show_book=False) }}
+</div>
+
+<div class="card danger-zone">
+  <h3 style="margin-top:0;">Remove this book</h3>
+  <p class="section-note">A book that has never been lent is deleted. One with history is withdrawn instead, so past loans stay on record.</p>
+  <form method="post" action="{{ url_for('library.book_delete', book_id=b.id) }}" onsubmit="return confirm('Remove “{{ b.title|replace("'", "") }}” from the catalogue?');">
+    <button type="submit" class="secondary">Remove book</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

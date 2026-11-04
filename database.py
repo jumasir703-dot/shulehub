@@ -694,7 +694,7 @@ def _post_init(conn):
     # Term history, exam invigilation, teacher and lesson attendance tables.
     # Each is guarded so a problem in one can never stop the app from starting
     # (every section also creates its own table on first use).
-    for _mod in ("terms", "invigilation", "teacher_attendance", "lesson_attendance"):
+    for _mod in ("terms", "invigilation", "teacher_attendance", "lesson_attendance", "messaging"):
         try:
             __import__(_mod).apply(conn, USE_POSTGRES)
         except Exception:

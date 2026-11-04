@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Message wording{% endblock %}
+{% block content %}
+<style>
+  .ms-tpl textarea{ width:100%; min-height:90px; }
+  .ms-tpl .form-row{ margin-top:0; }
+  .ms-vars{ font-size:.8rem; color:var(--muted); margin:4px 0 10px; }
+  .ms-vars code{ background:var(--gold-100); border-radius:4px; padding:1px 5px; }
+  .ms-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .ms-actions form{ margin:0; }
+</style>
+<h1>Message wording</h1>
+<p class="section-note"><a href="{{ url_for('msg.index') }}">← Messages</a></p>
+<div class="card"><p class="section-note" style="margin:0;">
+  These are the saved wordings you can start from when sending. Words in curly brackets, like <code>{student}</code>, are replaced with each child's real details.
+  Keep texts short: one text part is about 160 characters.
+</p></div>
+
+{% for kind, label, note in kinds %}
+<h2 style="margin-top:24px;">{{ label }}</h2>
+<div class="ms-vars">Available: {% for v in vars_by_kind[kind] %}<code>{{ '{' ~ v ~ '}' }}</code> {% endfor %}</div>
+{% for t in templates if t.kind == kind %}
+<form method="post" action="{{ url_for('msg.template_save', tpl_id=t.id) }}" class="card ms-tpl" id="t{{ t.id }}">
+  <label>Name {% if t.builtin %}<span class="section-note">(built-in)</span>{% endif %}</label>
+  <input type="text" name="name" value="{{ t.name }}" required style="max-width:380px;">
+  <label style="margin-top:10px;">Text message</label>
+  <textarea name="sms_body">{{ t.sms_body }}</textarea>
+  <label style="margin-top:10px;">Email subject</label>
+  <input type="text" name="email_subject" value="{{ t.email_subject }}">
+  <label style="margin-top:10px;">Email message</label>
+  <textarea name="email_body" style="min-height:180px;">{{ t.email_body }}</textarea>
+  <div class="ms-actions">
+    <button type="submit">Save</button>
+    {% if t.builtin %}
+    <button type="submit" class="secondary" formaction="{{ url_for('msg.template_reset', tpl_id=t.id) }}" onclick="return confirm('Restore the original wording?');">Restore original</button>
+    {% else %}
+    <button type="submit" class="secondary" formaction="{{ url_for('msg.template_delete', tpl_id=t.id) }}" onclick="return confirm('Delete this wording?');">Delete</button>
+    {% endif %}
+  </div>
+</form>
+{% endfor %}
+{% endfor %}
+
+<h2 style="margin-top:28px;">Add your own wording</h2>
+<form method="post" action="{{ url_for('msg.template_new') }}" class="card ms-tpl">
+  <div class="form-row">
+    <div><label>For</label>
+      <select name="kind">{% for kind, label, note in kinds %}<option value="{{ kind }}">{{ label }}</option>{% endfor %}</select></div>
+    <div><label>Name</label><input type="text" name="name" required></div>
+  </div>
+  <label style="margin-top:10px;">Text message</label><textarea name="sms_body"></textarea>
+  <label style="margin-top:10px;">Email subject</label><input type="text" name="email_subject">
+  <label style="margin-top:10px;">Email message</label><textarea name="email_body" style="min-height:140px;"></textarea>
+  <div class="ms-actions"><button type="submit">Add wording</button></div>
+</form>
+{% endblock %}

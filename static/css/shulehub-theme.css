@@ -1,0 +1,126 @@
+/* ShuleHub "Lavender Glass" theme (v2, built for the real base.html)
+   Loaded AFTER static/style.css, so it overrides it. To go back to the old look, run
+   `python apply_theme.py --off`. */
+
+:root{
+  /* the app's own colour variables, pointed at the new palette */
+  --green-900:#6a50c8; --green-800:#7a60d6; --green-700:#8a72e0; --green-600:#9b85e8;
+  --green-100:#ece6fb; --green-50:#f5f1fd;
+  --gold-500:#f6d98b;  --gold-400:#f9e3a8;
+  --paper:#fbf5ef; --ink:#2d2547; --muted:#857da0; --line:#e4dbf4;
+
+  --purple-1:#8d74e0; --purple-2:#6a50c8;
+  --lav-1:#e2d9f6; --lav-2:#cfc2f0;
+  --pastel-lav:#e9e1fb; --pastel-pink:#fbdfe4; --pastel-yellow:#fdf1c9; --pastel-blue:#dbe8fb;
+  --glass:rgba(251,245,239,.94);
+  --radius:22px;
+  --shadow:0 10px 30px rgba(106,80,200,.16), 0 2px 6px rgba(106,80,200,.08);
+}
+
+html, body{ color:var(--ink); }
+body{
+  background:linear-gradient(160deg,var(--lav-1),var(--lav-2)) fixed !important;
+  font-family:"Poppins","Segoe UI","Inter",system-ui,-apple-system,sans-serif;
+}
+h1,h2,h3,h4,.brand-text strong{ font-family:inherit; color:var(--ink); letter-spacing:-.01em; }
+a{ color:var(--purple-2); }
+
+/* ---- top bar: floating purple gradient ---- */
+.shell .topbar{
+  background:linear-gradient(135deg,var(--purple-1),var(--purple-2)) !important;
+  border:0 !important; border-radius:0 0 var(--radius) var(--radius);
+  padding:14px 22px; margin-bottom:22px;
+  box-shadow:0 12px 30px rgba(106,80,200,.28);
+}
+.shell .topbar .brand-text strong{ color:#fff !important; }
+.shell .topbar .brand-text span{ color:rgba(255,255,255,.8) !important; }
+.shell .topbar .brand-logo{ background:#fff; border-radius:14px; padding:3px; }
+
+/* ---- Menu button + dropdown ---- */
+.shell .menu-toggle{
+  background:#fff !important; color:var(--purple-2) !important; border:0 !important;
+  border-radius:999px !important; padding:9px 18px; font-weight:600;
+  box-shadow:0 6px 16px rgba(0,0,0,.15);
+}
+.shell .menu-panel{
+  background:var(--glass) !important; backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.8) !important; border-radius:var(--radius) !important;
+  box-shadow:0 18px 44px rgba(60,40,130,.28) !important; padding:10px;
+}
+.shell .menu-panel a, .shell .menu-panel .menu-link-btn{
+  color:var(--ink) !important; border-radius:14px !important; background:transparent;
+}
+.shell .menu-panel a:hover, .shell .menu-panel .menu-link-btn:hover{ background:var(--pastel-lav) !important; color:var(--purple-2) !important; }
+.shell .menu-panel a.active{
+  background:linear-gradient(135deg,var(--purple-1),var(--purple-2)) !important; color:#fff !important;
+  box-shadow:0 6px 14px rgba(106,80,200,.35);
+}
+.shell .menu-panel .menu-sep{ color:var(--purple-2) !important; border-color:var(--line) !important; font-weight:600; letter-spacing:.06em; }
+
+/* ---- cards: soft pastel glass, lifting on hover ---- */
+.content [class*="card"], .content .panel, .content .box, .content section.block{
+  background:var(--glass); border:1px solid rgba(255,255,255,.75) !important;
+  border-radius:var(--radius) !important; box-shadow:var(--shadow) !important;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.content [class*="card"]:hover{ transform:translateY(-4px); box-shadow:0 16px 36px rgba(106,80,200,.22) !important; }
+/* the grid of home-page tiles cycles through the four pastels from the design */
+.content a[class*="card"]:nth-child(4n+1), .content div[class*="card"]:nth-child(4n+1){ background:linear-gradient(145deg,var(--pastel-lav),#f7f3fe); }
+.content a[class*="card"]:nth-child(4n+2), .content div[class*="card"]:nth-child(4n+2){ background:linear-gradient(145deg,var(--pastel-pink),#fdf1f3); }
+.content a[class*="card"]:nth-child(4n+3), .content div[class*="card"]:nth-child(4n+3){ background:linear-gradient(145deg,var(--pastel-yellow),#fef9e6); }
+.content a[class*="card"]:nth-child(4n+4), .content div[class*="card"]:nth-child(4n+4){ background:linear-gradient(145deg,var(--pastel-blue),#eff5fd); }
+/* titles and links inside cards (the old stylesheet sets these to dark green) */
+.content [class*="card"] h2, .content [class*="card"] h3, .content [class*="card"] h4{ color:var(--ink) !important; }
+.content [class*="card"] a, .content [class*="card"] [class*="go"], .content [class*="card"] [class*="link"]{ color:var(--purple-2) !important; }
+/* the dark-green icon squares become purple */
+.content [class*="icon"]:not(svg):not(img){
+  background:linear-gradient(135deg,var(--purple-1),var(--purple-2)) !important; color:#fff !important;
+  border-radius:16px !important; box-shadow:0 6px 14px rgba(106,80,200,.35);
+}
+
+/* ---- buttons: pills ---- */
+.content button, .content .btn, .content input[type=submit], .content a.button{
+  background:linear-gradient(135deg,var(--purple-1),var(--purple-2)); color:#fff !important; border:0;
+  border-radius:999px; padding:9px 20px; font-weight:600; box-shadow:0 6px 16px rgba(106,80,200,.35); cursor:pointer;
+}
+.content button:hover, .content .btn:hover{ filter:brightness(1.07); }
+.content button.secondary, .content .btn.secondary, .content button.ghost{
+  background:rgba(255,255,255,.85); color:var(--purple-2) !important; border:1px solid var(--line); box-shadow:none;
+}
+
+/* ---- forms ---- */
+.content input, .content select, .content textarea{
+  background:#fff; border:1px solid var(--line); border-radius:14px; color:var(--ink);
+}
+.content input:focus, .content select:focus, .content textarea:focus{
+  outline:none; border-color:var(--purple-1); box-shadow:0 0 0 3px rgba(141,116,224,.25);
+}
+.content input[type=checkbox], .content input[type=radio]{ accent-color:var(--purple-2); }
+
+/* ---- tables ---- */
+.content table thead th{ background:var(--pastel-lav); color:var(--purple-2); border-color:var(--line); font-weight:600; }
+.content table tbody tr:nth-child(even) td{ background:rgba(233,225,251,.35); }
+.content td, .content th{ border-color:var(--line); }
+.content .tt-view-table th{ background:var(--purple-2); color:#fff; }
+.content .subnav a{ background:rgba(255,255,255,.7); color:var(--purple-2); padding:6px 14px; border-radius:999px; }
+.content .subnav a.active{ background:var(--purple-2); color:#fff; }
+
+/* ---- flash messages ---- */
+.flash{ border-radius:16px !important; box-shadow:var(--shadow); }
+.flash-success{ background:#e3f6ea !important; color:#1f6b3b !important; }
+.flash-error, .flash-danger{ background:var(--pastel-pink) !important; color:#a02b4a !important; }
+
+@media print{
+  body{ background:#fff !important; }
+  .shell .topbar{ box-shadow:none; }
+  .content [class*="card"]{ box-shadow:none !important; backdrop-filter:none; }
+}
+
+/* ---- search box in the top bar (from search_finish.zip) ---- */
+.shell .topbar .sh-search input{
+  border:0; border-radius:999px; padding:9px 16px; background:rgba(255,255,255,.96); color:var(--ink); min-width:210px;
+}
+.shell .topbar .sh-search button{
+  background:rgba(255,255,255,.22); color:#fff; box-shadow:none; border:0; border-radius:999px; padding:9px 16px; font-weight:600;
+}
+.shell .topbar .sh-search button:hover{ background:rgba(255,255,255,.34); }

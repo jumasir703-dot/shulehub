@@ -13,6 +13,7 @@
     <button class="btn" type="submit">Show</button>
     <a class="btn" href="{{ url_for('teacher_attendance.export_pdf', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">PDF</a>
     <a class="btn" href="{{ url_for('teacher_attendance.export_csv', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">CSV</a>
+    <a class="btn" href="{{ url_for('teacher_attendance.export_csv', fmt='xlsx', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">Excel</a>
     <a class="btn" href="{{ url_for('teacher_attendance.index') }}">← Register</a>
   </form>
 </section>

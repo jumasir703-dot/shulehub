@@ -43,6 +43,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 import branding
 import database as db
+import theme
 from analytics import _csv_safe, _find_column, _norm, _safe_filename
 
 fees_bp = Blueprint("fees", __name__, url_prefix="/fees")
@@ -709,9 +710,9 @@ def _styles():
     ss = getSampleStyleSheet()
     return {
         "title": ParagraphStyle("t", parent=ss["Title"], fontSize=15, leading=18, spaceAfter=2),
-        "sub": ParagraphStyle("s", parent=ss["Normal"], fontSize=9, textColor=colors.HexColor("#555555"), alignment=1),
+        "sub": ParagraphStyle("s", parent=ss["Normal"], fontSize=9, textColor=theme.MUTED, alignment=1),
         "body": ParagraphStyle("b", parent=ss["Normal"], fontSize=10, leading=13),
-        "small": ParagraphStyle("sm", parent=ss["Normal"], fontSize=8, textColor=colors.HexColor("#555555")),
+        "small": ParagraphStyle("sm", parent=ss["Normal"], fontSize=8, textColor=theme.MUTED),
     }
 
 
@@ -746,7 +747,7 @@ def receipt_pdf(payment_id):
     ]
     t = Table([[Paragraph(f"<b>{escape(a)}</b>", ss["body"]), Paragraph(escape(str(b)), ss["body"])] for a, b in rows],
               colWidths=[34 * mm, 78 * mm])
-    t.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
+    t.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.25, theme.LINE_STRONG),
                            ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
     story += [t, Spacer(1, 10)]
     note = _setting("fees_note")
@@ -778,8 +779,8 @@ def statement_pdf(student_id):
                  _kes(s["billed"]), _kes(s["paid"]), _kes(abs(s["balance"]))])
     t = Table(data, colWidths=[24 * mm, 76 * mm, 25 * mm, 25 * mm, 26 * mm], repeatRows=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f4e6c6")), ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("ALIGN", (2, 0), (-1, -1), "RIGHT"), ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
+        ("BACKGROUND", (0, 0), (-1, 0), theme.GOLD_100), ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (2, 0), (-1, -1), "RIGHT"), ("LINEBELOW", (0, 0), (-1, -1), 0.25, theme.LINE_STRONG),
         ("VALIGN", (0, 0), (-1, -1), "TOP"), ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold")]))
     story.append(t)
     paybill = _setting("fees_paybill")

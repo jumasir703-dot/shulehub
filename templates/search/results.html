@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<h1>Search</h1>
+<form method="get" action="{{ url_for('search.index') }}" class="card" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+  <input type="search" name="q" value="{{ q }}" placeholder="Name, admission no, phone, book, page…" autofocus
+         style="flex:1; min-width:220px;" aria-label="Search ShuleHub">
+  <button type="submit">Search</button>
+</form>
+
+{% if not q %}
+  <div class="card">
+    <p class="section-note" style="margin:0;">
+      Type a student's name or admission number, a guardian's phone number, a teacher, a class, a book title or ISBN,
+      or the name of a page such as <em>fees</em> or <em>remedial</em>. Every word you type must match, in any order.
+    </p>
+  </div>
+{% elif too_short %}
+  <div class="card"><p class="section-note" style="margin:0;">Type at least 2 characters to search.</p></div>
+{% elif not groups %}
+  <div class="card">
+    <h3 style="margin-top:0;">Nothing found for “{{ q }}”</h3>
+    <p class="section-note" style="margin:0;">
+      Check the spelling, or try fewer words. Phone numbers match however they were typed
+      (0712 345 678, +254712345678 or 712345678).
+    </p>
+  </div>
+{% else %}
+  <p class="section-note">{{ total }} result{{ '' if total == 1 else 's' }} for “{{ q }}”.</p>
+  {% for gr in groups %}
+  <div class="card search-group" id="g-{{ gr.key }}">
+    <h3 style="margin-top:0;">{{ gr.label }} <span class="section-note" style="font-weight:400;">· {{ gr["items"]|length }}{{ '+' if gr.more }}</span></h3>
+    <ul class="search-list">
+      {% for it in gr["items"] %}
+      <li>
+        {% if it.url %}<a href="{{ it.url }}">{% else %}<span>{% endif %}
+          <span class="s-title">{{ it.title }}</span>
+          {% if it.badge %}<span class="s-badge">{{ it.badge }}</span>{% endif %}
+          {% if it.sub %}<span class="s-sub">{{ it.sub }}</span>{% endif %}
+        {% if it.url %}</a>{% else %}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% if gr.more %}<p class="section-note" style="margin-bottom:0;">Showing the first {{ gr["items"]|length }}. Add another word to narrow it down.</p>{% endif %}
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

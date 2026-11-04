@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<style>
+  .ms-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:12px; }
+  .ms-kind{ display:block; text-decoration:none; color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--paper); }
+  .ms-kind:hover{ border-color:var(--green-900); }
+  .ms-kind strong{ display:block; margin-bottom:4px; }
+  .ms-kind span{ font-size:.86rem; color:var(--muted); }
+  .ms-pill{ display:inline-block; font-size:.74rem; font-weight:600; padding:2px 9px; border-radius:99px; background:var(--gold-100); color:var(--green-900); }
+  .ms-pill.bad{ background:var(--danger-bg); color:var(--danger); }
+  .ms-pill.good{ background:#dcebdd; color:var(--green-900); }
+  .ms-status{ display:flex; gap:24px; flex-wrap:wrap; font-size:.9rem; }
+</style>
+<h1>Messages</h1>
+
+<div class="card">
+  <div class="ms-status">
+    {% for key, name in (('sms','Text messages'), ('email','Email')) %}
+    {% set s = status[key] %}
+    <div><strong>{{ name }}:</strong>
+      {% if s.test %}<span class="ms-pill">Test mode: nothing is sent</span>
+      {% elif s.ok %}<span class="ms-pill good">{{ s.label }}</span>
+      {% else %}<span class="ms-pill bad">Not set up: {{ s.problem }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <p class="section-note" style="margin-bottom:0;">
+    Pick what to send. You will always see a preview, and can untick anyone, before anything goes out.
+    <a href="{{ url_for('msg.templates') }}">Edit the wording</a>
+    {% if user and user.role == 'admin' %} · <a href="{{ url_for('msg.settings') }}">SMS &amp; email settings</a>{% endif %}
+  </p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">New message</h3>
+  <div class="ms-grid">
+    {% for key, label, note in kinds %}
+    <a class="ms-kind" href="{{ url_for('msg.new', kind=key) }}"><strong>{{ label }}</strong><span>{{ note }}</span></a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Recent batches</h3>
+  {% if batches %}
+  <div style="overflow-x:auto;">
+  <table class="tt-view-table" style="width:100%;">
+    <thead><tr><th>When</th><th>Message</th><th>By</th><th>Sent</th><th>Failed</th><th>Waiting</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for b in batches %}
+      <tr>
+        <td>{{ b.created_at }}</td>
+        <td>{{ b.title }} <span class="section-note">({{ b.channels|replace('sms','text')|replace(',',' + ') }})</span></td>
+        <td>{{ b.created_by or '' }}</td>
+        <td>{{ b.counts.sent }}</td>
+        <td>{% if b.counts.failed %}<strong style="color:var(--danger);">{{ b.counts.failed }}</strong>{% else %}0{% endif %}</td>
+        <td>{{ b.counts.waiting + b.counts.draft }}</td>
+        <td>{{ 'Draft' if b.status == 'draft' else 'Sending…' if b.status == 'sending' else 'Cancelled' if b.status == 'cancelled' else 'Done' }}</td>
+        <td><a href="{{ url_for('msg.batch', batch_id=b.id) }}">Open</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="section-note" style="margin:0;">Nothing has been sent yet.</p>{% endif %}
+</div>
+{% endblock %}

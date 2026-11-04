@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}{{ b.title }}{% endblock %}
+{% block content %}
+<style>
+  .ms-stats{ display:flex; gap:10px; flex-wrap:wrap; }
+  .ms-stat{ border:1px solid var(--line); border-radius:10px; padding:8px 16px; background:var(--paper); min-width:96px; }
+  .ms-stat b{ display:block; font-size:1.35rem; }
+  .ms-stat span{ font-size:.78rem; color:var(--muted); }
+  .ms-stat.bad b{ color:var(--danger); }
+  .ms-sample{ white-space:pre-wrap; border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:var(--paper); font-size:.88rem; margin:6px 0 0; }
+  .ms-warn{ border-left:4px solid var(--gold-500); }
+  .ms-err{ color:var(--danger); font-size:.82rem; }
+  .ms-msg{ max-width:520px; font-size:.82rem; color:var(--muted); white-space:pre-wrap; }
+  .ms-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .ms-actions form{ margin:0; }
+</style>
+<h1>{{ b.title }}</h1>
+<p class="section-note"><a href="{{ url_for('msg.index') }}">← Messages</a>
+  · {{ kind_label[b.kind] }} · {{ b.channels|replace('sms','text')|replace(',',' + ') }} · made {{ b.created_at }}{% if b.created_by %} by {{ b.created_by }}{% endif %}</p>
+
+{% if b.status == 'draft' and (status.sms.test or status.email.test) %}
+<div class="card ms-warn"><strong>Test mode.</strong> Nothing will really be sent. The whole flow is recorded so you can practise. The administrator turns on real sending in Messages &gt; Settings.</div>
+{% endif %}
+
+{% if dup %}
+<div class="card ms-warn"><strong>Looks like a repeat.</strong> A batch like this was already sent on {{ dup.created_at }} ({{ dup.n }} message{{ '' if dup.n == 1 else 's' }}).
+  <a href="{{ url_for('msg.batch', batch_id=dup.id) }}">See it</a>. Sending again means families get it twice.</div>
+{% endif %}
+
+<div class="card">
+  <div class="ms-stats" id="stats">
+    {% if b.status == 'draft' %}
+    <div class="ms-stat"><b>{{ counts.draft }}</b><span>to send</span></div>
+    {% else %}
+    <div class="ms-stat"><b id="n-sent">{{ counts.sent }}</b><span>sent</span></div>
+    <div class="ms-stat {{ 'bad' if counts.failed }}"><b id="n-failed">{{ counts.failed }}</b><span>failed</span></div>
+    <div class="ms-stat"><b id="n-wait">{{ counts.waiting }}</b><span>waiting</span></div>
+    {% if counts.skipped %}<div class="ms-stat"><b>{{ counts.skipped }}</b><span>left out</span></div>{% endif %}
+    {% endif %}
+    {% if sms_parts %}<div class="ms-stat"><b>{{ sms_parts }}</b><span>text parts{% if est_cost is not none %} · about KES {{ est_cost }}{% endif %}</span></div>{% endif %}
+    {% if cost_total is not none %}<div class="ms-stat"><b>{{ cost_total }}</b><span>cost reported</span></div>{% endif %}
+  </div>
+
+  {% if b.status == 'sending' %}
+  <p class="section-note" id="working">Sending in the background. You can leave this page; it carries on.
+    {% if not working %}<br><strong>It looks like it stopped part-way (the program may have been restarted).</strong> Press Continue.{% endif %}</p>
+  {% endif %}
+
+  <div class="ms-actions">
+    {% if b.status == 'draft' %}
+      <button type="submit" form="send-form" onclick="return confirm('Send {{ counts.draft }} message(s) now? This cannot be undone.');">Send {{ counts.draft }} message{{ '' if counts.draft == 1 else 's' }}</button>
+      <form method="post" action="{{ url_for('msg.batch_discard', batch_id=b.id) }}" onsubmit="return confirm('Discard this draft?');"><button type="submit" class="secondary">Discard</button></form>
+    {% else %}
+      {% if counts.failed %}<form method="post" action="{{ url_for('msg.batch_retry', batch_id=b.id) }}"><button type="submit">Retry {{ counts.failed }} failed</button></form>{% endif %}
+      {% if b.status == 'sending' and not working %}<form method="post" action="{{ url_for('msg.batch_resume', batch_id=b.id) }}"><button type="submit">Continue sending</button></form>{% endif %}
+      {% if counts.queued %}<form method="post" action="{{ url_for('msg.batch_cancel', batch_id=b.id) }}" onsubmit="return confirm('Stop and cancel the messages not yet sent?');"><button type="submit" class="secondary">Stop</button></form>{% endif %}
+      <a class="btn secondary" href="{{ url_for('msg.batch_csv', batch_id=b.id) }}">Download log (CSV)</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if samples %}
+<div class="card">
+  <h3 style="margin-top:0;">What families will see</h3>
+  {% if samples.sms %}<strong>Text</strong> (to {{ samples.sms.student_name }}'s guardian){% set _ = 0 %}<div class="ms-sample">{{ samples.sms.body }}</div>{% endif %}
+  {% if samples.email %}<div style="margin-top:12px;"><strong>Email</strong>: {{ samples.email.subject }}</div><div class="ms-sample">{{ samples.email.body }}</div>{% endif %}
+</div>
+{% endif %}
+
+{% if skipped and b.status == 'draft' %}
+<div class="card">
+  <details><summary><strong>{{ skipped|length }} student{{ '' if skipped|length == 1 else 's' }} can't be reached</strong> (no usable contact)</summary>
+    <table class="tt-view-table" style="margin-top:8px;"><thead><tr><th>Student</th><th>Adm</th><th>Class</th><th>By</th><th>Why</th></tr></thead><tbody>
+      {% for s in skipped[:300] %}<tr><td>{{ s.student }}</td><td>{{ s.adm }}</td><td>{{ s.class }}</td><td>{{ 'text' if s.channel == 'sms' else 'email' }}</td><td>{{ s.reason }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% if skipped|length > 300 %}<p class="section-note">…and {{ skipped|length - 300 }} more.</p>{% endif %}
+  </details>
+  <p class="section-note" style="margin-bottom:0;">Fix their phone numbers or emails on the Students &amp; Guardians page, then make the batch again.</p>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Messages</h3>
+  {% if b.status != 'draft' %}
+  <div class="ms-actions" style="margin:0 0 10px;">
+    {% for key, label in (('', 'All'), ('sent', 'Sent'), ('failed', 'Failed'), ('queued', 'Waiting'), ('skipped', 'Left out')) %}
+    <a class="btn {{ '' if flt == key else 'secondary' }}" href="{{ url_for('msg.batch', batch_id=b.id, status=key) }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if b.status == 'draft' %}<form method="post" action="{{ url_for('msg.batch_send', batch_id=b.id) }}" id="send-form">
+    <input type="hidden" name="shown" value="{% for i in items %}{{ i.id }}{{ ',' if not loop.last }}{% endfor %}">{% endif %}
+  <div style="overflow-x:auto;">
+  <table class="tt-view-table" style="width:100%;">
+    <thead><tr>
+      {% if b.status == 'draft' %}<th><input type="checkbox" id="all" checked aria-label="Select all"></th>{% endif %}
+      <th>Student</th><th>To</th><th>By</th><th>Message</th>{% if b.status != 'draft' %}<th>Status</th>{% endif %}
+    </tr></thead>
+    <tbody>
+      {% for i in items %}
+      <tr>
+        {% if b.status == 'draft' %}<td><input type="checkbox" class="inc" name="include" value="{{ i.id }}" checked></td>{% endif %}
+        <td>{{ i.student_name }}<br><span class="section-note">{{ i.student_adm }}</span></td>
+        <td>{{ i.guardian_name or '' }}<br><span class="section-note">{{ i.address }}</span></td>
+        <td>{{ 'Text' if i.channel == 'sms' else 'Email' }}{% if i.channel == 'sms' and i.parts > 1 %}<br><span class="section-note">{{ i.parts }} parts</span>{% endif %}</td>
+        <td><div class="ms-msg">{% if i.subject %}<b>{{ i.subject }}</b>{{ '\n' }}{% endif %}{{ i.body[:240] }}{{ '…' if i.body|length > 240 }}</div></td>
+        {% if b.status != 'draft' %}<td>{{ {'sent':'Sent','failed':'Failed','queued':'Waiting','sending':'Sending','skipped':'Left out'}.get(i.status, i.status) }}{% if i.error %}<div class="ms-err">{{ i.error }}</div>{% endif %}</td>{% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="section-note">Nothing to show.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if b.status == 'draft' %}</form>{% endif %}
+  {% if items|length >= shown_limit %}<p class="section-note">Showing the first {{ shown_limit }}. {% if b.status == 'draft' %}The rest will be sent too; use the CSV after sending to see all of them.{% endif %}</p>{% endif %}
+</div>
+
+<script>
+  var all = document.getElementById('all');
+  if (all) all.addEventListener('change', function () { document.querySelectorAll('.inc').forEach(function (c) { c.checked = all.checked; }); });
+  {% if b.status == 'sending' %}
+  (function poll() {
+    fetch("{{ url_for('msg.batch_status', batch_id=b.id) }}").then(function (r) { return r.json(); }).then(function (d) {
+      var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+      set('n-sent', d.sent); set('n-failed', d.failed); set('n-wait', d.waiting);
+      if (d.status !== 'sending') { location.reload(); } else { setTimeout(poll, 2000); }
+    }).catch(function () { setTimeout(poll, 5000); });
+  })();
+  {% endif %}
+</script>
+{% endblock %}

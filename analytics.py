@@ -41,6 +41,7 @@ import curriculum
 import branding
 import import_files
 import database as db
+import theme
 import exam_analysis as ea
 import exam_flow as wf
 from auth import has_service
@@ -733,10 +734,10 @@ def merit_pdf(exam_id):
     data = [head_cells] + [[Paragraph(escape(str(c)), small) for c in r] for r in body]
     t = Table(data, repeatRows=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f4e6c6")),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#b5ad96")),
+        ("BACKGROUND", (0, 0), (-1, 0), theme.GOLD_100),
+        ("GRID", (0, 0), (-1, -1), 0.3, theme.LINE_STRONG),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#faf7ee")]),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, theme.ROW_ALT]),
         ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
     ]))
     doc.build(branding.logo_story() + [Paragraph(escape(title), styles["Title"]), Paragraph(escape(sub), styles["Normal"]), Spacer(1, 8), t])
@@ -765,7 +766,7 @@ def subject_analysis(exam_id):
 def _report_pages(res, prev, students, school_name):
     styles = getSampleStyleSheet()
     h = ParagraphStyle("h", parent=styles["Title"], fontSize=17, spaceAfter=2)
-    sub = ParagraphStyle("s", parent=styles["Normal"], alignment=1, textColor=colors.HexColor("#6f6a5b"))
+    sub = ParagraphStyle("s", parent=styles["Normal"], alignment=1, textColor=theme.MUTED)
     small = ParagraphStyle("sm", parent=styles["Normal"], fontSize=8.5, leading=11)
     exam = res["exam"]
     is_cbc = res["scale"] == "CBC8"
@@ -806,11 +807,11 @@ def _report_pages(res, prev, students, school_name):
                          Paragraph(escape(tname.replace(" / ", ", ")), small)])
         t = Table(rows, repeatRows=1, colWidths=[34 * mm, 12 * mm, 12 * mm, 9 * mm, 12 * mm, 9 * mm, 16 * mm, 34 * mm, 42 * mm])
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#103524")),
+            ("BACKGROUND", (0, 0), (-1, 0), theme.GREEN_900),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTSIZE", (0, 0), (-1, -1), 8.5),
-            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#b5ad96")),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#faf7ee")]),
+            ("GRID", (0, 0), (-1, -1), 0.3, theme.LINE_STRONG),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, theme.ROW_ALT]),
             ("ALIGN", (1, 0), (6, -1), "CENTER"),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
@@ -832,8 +833,8 @@ def _report_pages(res, prev, students, school_name):
         s_t = Table(summary, colWidths=[40 * mm, 45 * mm, 40 * mm, 45 * mm])
         s_t.setStyle(TableStyle([
             ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"), ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 9), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f4e6c6")),
-            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#c8932b")),
+            ("FONTSIZE", (0, 0), (-1, -1), 9), ("BACKGROUND", (0, 0), (-1, -1), theme.GOLD_100),
+            ("GRID", (0, 0), (-1, -1), 0.3, theme.GOLD_500),
         ]))
         story += [s_t, Spacer(1, 8)]
 

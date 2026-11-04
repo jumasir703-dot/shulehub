@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Library clearance{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div><label>Grade</label>
+      <select name="grade" onchange="this.form.submit()"><option value="">All grades</option>
+        {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if g.id == grade }}>{{ g.name }}</option>{% endfor %}</select></div>
+    <div style="flex:0;"><a class="btn secondary" target="_blank" href="{{ url_for('library.clearance_pdf', grade=grade) }}">Download PDF</a></div>
+  </form>
+  <p class="section-note">{{ rows|length }} student{{ '' if rows|length == 1 else 's' }} not yet cleared by the library. Everyone else is clear.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Student</th><th>Class</th><th>Books still held</th><th class="money">Fine owed (KES)</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td><a href="{{ url_for('library.borrower', kind='s', borrower_id=r.id) }}">{{ r.name }}</a><br><span class="lib-quiet">{{ r.adm }}</span></td>
+        <td>{{ r.cls }}</td>
+        <td>{% for b in r.books %}{{ b }}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</td>
+        <td class="money">{{ r.owed|libmoney if r.owed else '—' }}</td></tr>
+    {% else %}
+      <tr><td colspan="4" class="section-note">Every student is cleared by the library. 🎉</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

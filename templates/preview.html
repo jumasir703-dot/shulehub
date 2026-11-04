@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Theme preview</title>
+<style>
+:root{--green-900:#222;--paper:#fff;--line:#ddd;--ink:#000;--muted:#666;--gold-500:#c90}
+body{margin:0;font-family:sans-serif}
+header{display:flex;gap:8px;align-items:center;padding:12px 24px}
+header b{margin-right:18px}
+header a{padding:8px 14px;text-decoration:none}
+main{max-width:1000px;margin:24px auto;padding:0 16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}
+.card{padding:18px}.stat small{display:block;color:var(--muted)}.stat b{font-size:1.6rem}
+.hero{padding:28px;background:linear-gradient(135deg,#a88ee6,#7f64d6)!important;color:#fff;border-radius:22px}
+.hero h2{color:#fff;margin-top:0}
+table{width:100%}td,th{padding:10px;text-align:left}
+.subnav{margin:10px 0}.subnav a{margin-right:6px;text-decoration:none}
+</style>
+<link rel="stylesheet" href="static/css/shulehub-theme.css"></head>
+<body>
+<header><b>ShuleHub</b><a class="active" href="#">Dashboard</a><a href="#">Students</a><a href="#">Timetable</a><a href="#">Remedial</a><a href="#">Library</a><a href="#">Fees</a></header>
+<main>
+<div class="card hero"><h2>Good afternoon!</h2><p>You have 5 remedial sessions and 3 overdue library books today.</p><button>Add new</button></div>
+<div class="grid">
+<div class="card stat"><small>Students</small><b>1,248</b></div>
+<div class="card stat"><small>Books out</small><b>312</b></div>
+<div class="card stat"><small>Overdue</small><b>27</b></div>
+<div class="card stat"><small>Fees collected</small><b>82%</b></div></div>
+<nav class="subnav"><a class="active" href="#">Weekdays</a><a href="#">Weekend</a></nav>
+<div class="card"><h3>Remedial timetable</h3>
+<table><thead><tr><th>Class</th><th>M1</th><th>E1</th><th>E2</th></tr></thead>
+<tbody><tr><td>4A</td><td>Maths</td><td>English</td><td></td></tr><tr><td>4B</td><td>Physics</td><td></td><td>Maths</td></tr><tr><td>4C</td><td></td><td>Maths</td><td>Physics</td></tr></tbody></table>
+<p><input placeholder="Search"> <select><option>Form 4</option></select> <button>Save</button> <button class="secondary">Clear</button></p></div>
+</main></body></html>

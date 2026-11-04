@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Remedial subjects &amp; teachers{% endblock %}
+{% block content %}
+<style>
+  .rm-table{ width:100%; border-collapse:collapse; font-size:.9rem; }
+  .rm-table th, .rm-table td{ border-bottom:1px solid var(--line); padding:7px 8px; text-align:left; vertical-align:middle; }
+  .rm-table th{ font-size:.78rem; color:var(--muted); font-weight:600; }
+  .rm-table input[type=number]{ width:64px; }
+  tr.rm-off td:not(:first-child){ opacity:.45; }
+  .rm-t-list{ max-height:190px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px; margin-top:6px; background:var(--paper); min-width:190px; }
+  .rm-t-list label{ display:flex; align-items:center; gap:8px; font-size:.86rem; color:var(--ink); margin:0 0 4px; }
+  details.rm-d summary{ cursor:pointer; font-size:.86rem; }
+  .rm-none{ color:var(--danger); font-weight:600; }
+  .rm-need{ font-size:.86rem; color:var(--muted); margin-top:10px; }
+  .rm-need.over{ color:var(--danger); font-weight:600; }
+</style>
+<h1>Remedial Timetable <span class="section-note" style="font-weight:400;">· {{ profiles[schedule].label }}</span></h1>
+{% include "remedial/_nav.html" %}
+
+{% if not configured %}
+<div class="card" style="border-left:4px solid var(--gold-500);">
+  <strong>Set up the {{ profiles[schedule].label|lower }} extra hours first.</strong>
+  <a href="{{ url_for('remedial.setup', schedule=schedule) }}">Choose the morning and evening days, start times and session length</a>, then come back here.
+</div>
+{% endif %}
+
+<div class="card">
+  <p class="section-note" style="margin:0;">
+    For each grade, tick the subjects that get remedial sessions, say how many a week, and choose who may teach them.
+    This plan is only for the {{ profiles[schedule].label|lower }} schedule; the other schedule has its own. These teachers are chosen separately from the normal timetable. Every class in the grade follows the same plan.
+    {% if configured %}Each class has <strong>{{ slots }}</strong> remedial session{{ '' if slots == 1 else 's' }} a week.{% endif %}
+  </p>
+</div>
+
+<form method="post" action="{{ url_for('remedial.plan_save') }}">
+  <input type="hidden" name="schedule" value="{{ schedule }}">
+  {% for g in grades %}
+  <div class="card rm-grade">
+    <h3 style="margin-top:0;">{{ g.name }}</h3>
+    <div style="overflow-x:auto;">
+    <table class="rm-table">
+      <thead><tr><th style="width:36px;">Use</th><th>Subject</th><th>Sessions / week</th><th>Remedial teachers</th></tr></thead>
+      <tbody>
+        {% for s in g.subjects %}
+        <tr class="rm-row {{ '' if s.on else 'rm-off' }}">
+          <td><input type="checkbox" class="rm-on" name="on_{{ s.id }}" value="1" {{ 'checked' if s.on }} aria-label="Include {{ s.name }}"></td>
+          <td>{{ s.name }}</td>
+          <td><input type="number" class="rm-spw" name="spw_{{ s.id }}" min="1" max="10" value="{{ s.spw }}"></td>
+          <td>
+            <details class="rm-d">
+              <summary><span class="rm-tcount">{{ (s.teacher_ids|length ~ ' selected') if s.teacher_ids else 'none chosen' }}</span></summary>
+              <div class="rm-t-list">
+                {% for t in teachers %}
+                <label><input type="checkbox" class="rm-t" name="t_{{ s.id }}" value="{{ t.id }}" {{ 'checked' if t.id in s.teacher_ids }}> {{ t.name }}</label>
+                {% else %}
+                <span class="section-note">No teachers yet. Add them on the Teachers page.</span>
+                {% endfor %}
+              </div>
+            </details>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="rm-need">Needs <span class="rm-sum">0</span> of {{ slots }} weekly session{{ '' if slots == 1 else 's' }} per class.</div>
+  </div>
+  {% else %}
+  <div class="card"><p class="section-note" style="margin:0;">There are no subjects yet. Add them on the Subjects page.</p></div>
+  {% endfor %}
+
+  {% if grades %}
+  <button type="submit">Save subjects &amp; teachers</button>
+  <a class="btn secondary" href="{{ url_for('remedial.view_page', schedule=schedule) }}" style="margin-left:8px;">Go to the timetable</a>
+  {% endif %}
+</form>
+
+<script>
+  (function () {
+    var slots = {{ slots }};
+    function recalc(card) {
+      var sum = 0;
+      card.querySelectorAll('tr.rm-row').forEach(function (tr) {
+        var on = tr.querySelector('.rm-on').checked;
+        var n = parseInt(tr.querySelector('.rm-spw').value, 10) || 0;
+        var count = tr.querySelectorAll('.rm-t:checked').length;
+        if (on) sum += n;
+        tr.classList.toggle('rm-off', !on);
+        var label = tr.querySelector('.rm-tcount');
+        label.textContent = count ? count + ' selected' : 'none chosen';
+        label.classList.toggle('rm-none', on && !count);
+      });
+      var box = card.querySelector('.rm-need');
+      card.querySelector('.rm-sum').textContent = sum;
+      box.classList.toggle('over', configuredSlots() && sum > slots);
+    }
+    function configuredSlots() { return slots > 0; }
+    document.querySelectorAll('.rm-grade').forEach(function (card) {
+      card.addEventListener('input', function () { recalc(card); });
+      card.addEventListener('change', function () { recalc(card); });
+      recalc(card);
+    });
+  })();
+</script>
+{% endblock %}

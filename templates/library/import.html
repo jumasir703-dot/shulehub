@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import books{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Import books from a file</h3>
+  <p class="section-note">
+    Upload a CSV or Excel (.xlsx) list of your books. The first row must have headings. Only <strong>Title</strong> is required;
+    the others are used when present: Author, ISBN, Publisher, Year, Edition, Category, Subject, Shelf, Price,
+    <strong>Copies</strong> (how many you own, default 1) and Accession (your own accession numbers, only if you already have them).
+  </p>
+  <ul class="section-note" style="margin:6px 0 14px 18px;">
+    <li>Copies get numbered automatically (LIB-00001, LIB-00002…) unless you supply accession numbers.</li>
+    <li>A row with the same ISBN, or the same title and author, as a book you already have adds copies to it instead of creating a duplicate.</li>
+    <li>The import is all-or-nothing: if something goes wrong, nothing is added. Rows with a problem are skipped and listed afterwards.</li>
+  </ul>
+  <form method="post" action="{{ url_for('library.books_import') }}" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv,.xlsx,.xlsm,.txt" required>
+    <div class="inline-actions" style="margin-top:14px;">
+      <button type="submit">Import</button>
+      <a class="btn secondary" href="{{ url_for('library.import_template') }}">Download a sample file</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

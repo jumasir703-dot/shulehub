@@ -1,0 +1,21 @@
+{# The book detail fields, shared by "Add a book" and "Edit". Expects `v` (a book row or the submitted form). #}
+<div class="form-row">
+  <div style="flex:2;"><label>Title *</label><input type="text" name="title" value="{{ v.title or '' }}" maxlength="250" required></div>
+  <div style="flex:2;"><label>Author</label><input type="text" name="author" value="{{ v.author or '' }}" maxlength="200"></div>
+</div>
+<div class="form-row">
+  <div><label>Category</label><input type="text" name="category" value="{{ v.category or '' }}" list="lib-cats" maxlength="80" placeholder="Textbook, Fiction, Reference…"></div>
+  <div><label>Subject / learning area</label><input type="text" name="subject" value="{{ v.subject or '' }}" maxlength="80"></div>
+  <div><label>Shelf / location</label><input type="text" name="shelf" value="{{ v.shelf or '' }}" maxlength="40"></div>
+</div>
+<div class="form-row">
+  <div><label>ISBN</label><input type="text" name="isbn" value="{{ v.isbn or '' }}" maxlength="30"></div>
+  <div><label>Publisher</label><input type="text" name="publisher" value="{{ v.publisher or '' }}" maxlength="150"></div>
+  <div><label>Year</label><input type="text" name="year" value="{{ v.year or '' }}" maxlength="10"></div>
+  <div><label>Edition</label><input type="text" name="edition" value="{{ v.edition or '' }}" maxlength="40"></div>
+  <div><label>Price (KES)</label><input type="number" name="price" min="0" step="0.01" value="{{ v.price if v.price is not none and v.price != '' else '' }}"></div>
+</div>
+<div class="form-row">
+  <div style="flex:1;"><label>Notes</label><input type="text" name="notes" value="{{ v.notes or '' }}" maxlength="600"></div>
+</div>
+<datalist id="lib-cats">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>

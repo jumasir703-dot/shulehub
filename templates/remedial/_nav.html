@@ -1,0 +1,12 @@
+<nav class="subnav no-print">
+  {% for key, p in profiles.items() %}
+  <a href="{{ url_for(request.endpoint, schedule=key) }}" class="{{ 'active' if schedule == key }}"
+     style="font-weight:{{ 700 if schedule == key else 400 }};">{{ p.label }}</a>
+  {% endfor %}
+  <span style="opacity:.4; margin:0 6px;">|</span>
+  <a href="{{ url_for('remedial.view_page', schedule=schedule) }}" class="{{ 'active' if request.endpoint == 'remedial.view_page' }}">Timetable</a>
+  {% if can('timetable_edit') %}
+  <a href="{{ url_for('remedial.setup', schedule=schedule) }}" class="{{ 'active' if request.endpoint == 'remedial.setup' }}">Extra hours</a>
+  <a href="{{ url_for('remedial.plan', schedule=schedule) }}" class="{{ 'active' if request.endpoint == 'remedial.plan' }}">Subjects &amp; teachers</a>
+  {% endif %}
+</nav>

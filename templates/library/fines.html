@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Library fines{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="stat-row">
+  <div class="stat"><span>Owed (books already returned)</span><strong class="small-val {{ 'owes' if total_unpaid > 0 }}">KES {{ total_unpaid|libmoney }}</strong></div>
+  <div class="stat"><span>Building up on overdue books</span><strong class="small-val">KES {{ total_accruing|libmoney }}</strong></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Fines to collect</h3>
+  <p class="section-note">Mark a fine <strong>paid</strong> once the money is received, or <strong>waive</strong> it with a reason. Library fines are tracked here and are not added to school fees.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Borrower</th><th>Book</th><th>Returned</th><th class="money">Fine (KES)</th><th></th></tr></thead>
+    <tbody>
+    {% for l in unpaid %}
+      <tr>
+        <td>{% if l.student_id %}<a href="{{ url_for('library.borrower', kind='s', borrower_id=l.student_id) }}">{{ l.who }}</a>
+            {% elif l.teacher_id %}<a href="{{ url_for('library.borrower', kind='t', borrower_id=l.teacher_id) }}">{{ l.who }}</a>{% else %}{{ l.who }}{% endif %}
+          <br><span class="lib-quiet">{{ l.ref }}{% if l.ref and l.class_name %} · {% endif %}{{ l.class_name }}</span></td>
+        <td class="lib-wrap">{{ l.title }}<br><span class="lib-quiet">{{ l.accession_no }}{% if l.outcome == 'lost' %} · lost{% elif l.outcome == 'damaged' %} · damaged{% endif %}</span>
+          {% if l.fine_note %}<br><span class="lib-quiet">“{{ l.fine_note }}”</span>{% endif %}</td>
+        <td>{{ l.returned_on|libdate }}</td>
+        <td class="money">{{ l.fine_amount|libmoney }}</td>
+        <td>
+          <form class="lib-fine-form" method="post" action="{{ url_for('library.fine_settle', loan_id=l.id) }}">
+            <input type="text" name="note" placeholder="Note / reason" maxlength="200">
+            <button type="submit" name="action" value="paid" class="small">Mark paid</button>
+            <button type="submit" name="action" value="waive" class="small secondary">Waive</button>
+          </form></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="section-note">No fines are waiting to be collected.</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+
+{% if accruing %}
+<div class="card">
+  <h3 style="margin-top:0;">Overdue now (fine is still growing)</h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Borrower</th><th>Book</th><th>Due</th><th class="money">Days late</th><th class="money">Fine so far (KES)</th></tr></thead>
+    <tbody>
+    {% for l in accruing %}
+      <tr><td>{{ l.who }}<br><span class="lib-quiet">{{ l.class_name }}</span></td><td>{{ l.title }}<br><span class="lib-quiet">{{ l.accession_no }}</span></td>
+        <td>{{ l.due_on|libdate }}</td><td class="money">{{ l.days_late }}</td><td class="money owes">{{ l.fine_now|libmoney }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Recently settled</h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Borrower</th><th>Book</th><th class="money">Fine (KES)</th><th>Outcome</th><th>Settled</th><th>Note</th></tr></thead>
+    <tbody>
+    {% for l in settled %}
+      <tr><td>{{ l.who }}</td><td>{{ l.title }}</td><td class="money">{{ l.fine_amount|libmoney }}</td>
+        <td><span class="badge {{ 'ok' if l.fine_status == 'paid' else 'off' }}">{{ l.fine_status }}</span></td>
+        <td>{{ l.fine_settled_on|libdate }}</td><td class="lib-quiet">{{ l.fine_note or '' }}</td></tr>
+    {% else %}
+      <tr><td colspan="6" class="section-note">Nothing settled yet.</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

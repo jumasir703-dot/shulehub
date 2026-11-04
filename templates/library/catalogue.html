@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "library/_macros.html" import pager with context %}
+{% block title %}Library catalogue{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="card">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div style="flex:2;"><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Title, author, ISBN, subject, shelf or accession no."></div>
+    <div><label>Category</label>
+      <select name="category" onchange="this.form.submit()">
+        <option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}
+      </select></div>
+    <div><label>Availability</label>
+      <select name="avail" onchange="this.form.submit()">
+        <option value="">Any</option>
+        <option value="yes" {{ 'selected' if avail == 'yes' }}>Available now</option>
+        <option value="no" {{ 'selected' if avail == 'no' }}>None available</option>
+      </select></div>
+    <div style="flex:0;"><button type="submit">Search</button></div>
+  </form>
+  {% if is_librarian %}
+  <div class="inline-actions" style="margin-top:14px;">
+    <a class="btn small" href="{{ url_for('library.book_new') }}">Add a book</a>
+    <a class="btn small secondary" href="{{ url_for('library.books_import') }}">Import books</a>
+    <a class="btn small secondary" href="{{ url_for('library.inventory_csv') }}">Export all (CSV)</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <p class="section-note" style="margin-top:0;">{{ total }} title{{ '' if total == 1 else 's' }}{% if q or category or avail %} match{{ 'es' if total == 1 }}{% endif %}</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Shelf</th><th class="money">Copies</th><th>Availability</th></tr></thead>
+    <tbody>
+    {% for b in rows %}
+      <tr>
+        <td class="lib-wrap"><a href="{{ url_for('library.book_detail', book_id=b.id) }}"><strong>{{ b.title }}</strong></a>{% if b.isbn %}<br><span class="lib-quiet">ISBN {{ b.isbn }}</span>{% endif %}</td>
+        <td>{{ b.author or '' }}</td>
+        <td>{{ b.category or '' }}{% if b.subject %}<br><span class="lib-quiet">{{ b.subject }}</span>{% endif %}</td>
+        <td>{{ b.shelf or '' }}</td>
+        <td class="money">{{ b.copies }}</td>
+        <td>
+          {% if b.copies == 0 %}<span class="badge off">no copies</span>
+          {% elif b.available > 0 %}<span class="badge ok">{{ b.available }} available</span>
+          {% else %}<span class="badge warn">all out</span>{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="section-note">
+        {% if q or category or avail %}No books match. Try fewer words.{% else %}The catalogue is empty.{% if is_librarian %} <a href="{{ url_for('library.book_new') }}">Add the first book</a> or <a href="{{ url_for('library.books_import') }}">import a list</a>.{% endif %}{% endif %}
+      </td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  {{ pager(page, pages, qs) }}
+</div>
+{% endblock %}

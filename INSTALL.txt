@@ -1,0 +1,19 @@
+MASTER TIMETABLE UPDATE FOR SHULEHUB
+====================================
+1. Close ShuleHub.exe if it is running (check Task Manager).
+2. Unzip THIS zip straight into your ShuleHub folder (the one that contains
+   app.py and build_windows.bat). Choose "Replace the files" when asked.
+3. Double-click build_windows.bat.
+   - It first runs apply_master_timetable.py, which edits the main files for you:
+       app.py            -> imports and registers the Master Timetable
+       permissions.py    -> same access as View / Export
+       templates/base.html -> adds "Master Timetable" to the menu
+       ShuleHub.spec     -> adds the module to the build
+   - Then it builds dist\ShuleHub.exe as usual.
+4. Open dist\ShuleHub.exe -> Timetable menu -> Master Timetable.
+
+Safe to repeat: running the build again changes nothing twice.
+Your originals are kept in _patch_backup\ the first time a file is changed.
+If the patcher cannot find a line it expects, the build stops and tells you
+which file; nothing is half-edited.
+Your school's records (C:\Users\<you>\ShuleHubData) are not touched.

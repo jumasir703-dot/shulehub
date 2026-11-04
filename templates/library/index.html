@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "library/_macros.html" import loan_table with context %}
+{% block title %}Library{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+{% if not has_books %}
+<div class="card callout">
+  <strong>Start here:</strong> add your books one by one on the <a href="{{ url_for('library.book_new') }}">Add a book</a> page,
+  or load a whole list at once with <a href="{{ url_for('library.books_import') }}">Import books</a> (CSV or Excel).
+  Then check the loan rules and fines under <a href="{{ url_for('library.settings') }}">Settings</a>.
+</div>
+{% endif %}
+
+<div class="stat-row">
+  <div class="stat"><span>Titles</span><strong>{{ stats.titles }}</strong></div>
+  <div class="stat"><span>Copies</span><strong>{{ stats.copies }}</strong></div>
+  <div class="stat"><span>Available now</span><strong>{{ stats.available }}</strong></div>
+  <div class="stat"><span>On loan</span><strong>{{ stats.on_loan }}</strong></div>
+  <div class="stat"><span>Overdue</span><strong class="{{ 'owes' if stats.overdue }}">{{ stats.overdue }}</strong></div>
+  <div class="stat"><span>Fines owed</span><strong class="small-val {{ 'owes' if owed > 0 }}">KES {{ owed|libmoney }}</strong></div>
+</div>
+
+<div class="grid-even" style="margin-top:0; margin-bottom:18px;">
+  <div class="card">
+    <h3 style="margin-top:0;">Return a book</h3>
+    <form method="post" action="{{ url_for('library.return_book') }}">
+      <label for="ret-acc">Accession number (scan or type)</label>
+      <input type="text" id="ret-acc" name="accession" class="lib-big" required autofocus autocomplete="off" placeholder="e.g. LIB-00012">
+      <input type="hidden" name="next" value="{{ url_for('library.index') }}">
+      <button type="submit" style="margin-top:12px;">Return</button>
+    </form>
+    <p class="section-note">Lost or damaged? Use the <a href="{{ url_for('library.circulation') }}">Issue / Return</a> page.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;">Issue a book</h3>
+    <label for="who-q">Find the student or teacher</label>
+    <div><input type="text" id="who-q" class="lib-big" placeholder="Name or admission number"></div>
+    <p class="section-note">Pick the person and you'll go straight to the issue screen.</p>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Overdue {% if n_overdue %}<span class="badge bad">{{ n_overdue }}</span>{% endif %}
+    {% if n_overdue %}<span style="float:right; font-weight:400; font-size:.85rem;">
+      <a href="{{ url_for('library.overdue_pdf') }}" target="_blank">PDF</a> · <a href="{{ url_for('library.overdue_csv') }}">CSV</a>
+      {% if n_overdue > 10 %} · <a href="{{ url_for('library.loans', status='overdue') }}">all {{ n_overdue }}</a>{% endif %}</span>{% endif %}</h3>
+  {{ loan_table(overdue, actions=True, next_url=url_for('library.index')) if overdue else '<p class="section-note">Nothing is overdue. 🎉</p>'|safe }}
+</div>
+
+{% if due_soon %}
+<div class="card">
+  <h3 style="margin-top:0;">Due in the next 3 days</h3>
+  {{ loan_table(due_soon, actions=True, next_url=url_for('library.index')) }}
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Latest activity</h3>
+  {{ loan_table(recent) }}
+</div>
+
+{% include "library/_lookup_js.html" %}
+<script>
+  libLookup(document.getElementById('who-q'), "{{ url_for('library.api_borrowers') }}",
+    function (p) { return '<b>' + libEsc(p.name) + '</b><small>' + libEsc(p.type_label) + ' · ' + libEsc(p.ref ? p.ref + ' · ' : '') + libEsc(p.sub) + '</small>'; },
+    function (p) { window.location = "{{ url_for('library.circulation') }}?borrower=" + encodeURIComponent(p.key); });
+</script>
+{% endblock %}

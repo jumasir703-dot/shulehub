@@ -13,6 +13,7 @@ from datetime import datetime
 from PIL import Image, UnidentifiedImageError
 
 import database as db
+import theme
 
 MAX_UPLOAD_BYTES = 3 * 1024 * 1024
 MAX_PIXELS = 25_000_000      # refuse absurdly large images before decoding them
@@ -134,8 +135,8 @@ def xlsx_from_csv_response(resp, school_name):
             img.width, img.height = int(img.width * scale), int(img.height * scale)
             ws.add_image(img, "A1")
             row = 5            # leave room for the picture (about 4 rows)
-        ws.cell(row=row, column=1, value=school_name).font = Font(bold=True, size=14)
-        ws.cell(row=row + 1, column=1, value=pretty).font = Font(size=11, color="555555")
+        ws.cell(row=row, column=1, value=school_name).font = Font(bold=True, size=14, color=theme.hex6("GREEN_900"))
+        ws.cell(row=row + 1, column=1, value=pretty).font = Font(size=11, color=theme.hex6("MUTED"))
         head_row = row + 3
         for r_i, r in enumerate(rows):
             for c_i, v in enumerate(r, start=1):
@@ -146,7 +147,7 @@ def xlsx_from_csv_response(resp, school_name):
                 cell = ws.cell(row=head_row + r_i, column=c_i, value=v)
                 if r_i == 0:
                     cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill("solid", fgColor="103524")
+                    cell.fill = PatternFill("solid", fgColor=theme.hex6("GREEN_900"))
                     cell.alignment = Alignment(horizontal="center")
         for c_i in range(1, (max((len(r) for r in rows), default=1)) + 1):
             width = max((len(str(r[c_i - 1])) for r in rows if len(r) >= c_i), default=8)

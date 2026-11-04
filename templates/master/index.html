@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Master Timetable{% endblock %}
+{% block content %}
+{% include "master/_grid_style.html" %}
+
+
+<h1 class="no-print">Master Timetable</h1>
+
+<div class="card no-print">
+  <form method="get" class="form-row" style="margin-top:0;">
+    <div>
+      <label>Layout</label>
+      <select name="layout" onchange="this.form.submit()">
+        {% for key, label in layouts.items() %}
+        <option value="{{ key }}" {{ 'selected' if m.layout == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Day</label>
+      <select name="day" onchange="this.form.submit()">
+        <option value="{{ week }}" {{ 'selected' if m.day == week }}>Whole week</option>
+        {% for d in m.days %}
+        <option value="{{ d }}" {{ 'selected' if m.day == d }}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if m.layout == 'class' and m.grades|length > 1 %}
+    <div>
+      <label>Grade</label>
+      <select name="grade" onchange="this.form.submit()">
+        <option value="">All grades</option>
+        {% for g in m.grades %}
+        <option value="{{ g.id }}" {{ 'selected' if m.grade == g.id }}>{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="mt-actions">
+      <button type="button" class="secondary" onclick="window.print()">Print</button>
+      <a class="btn secondary" href="{{ url_for('master.export_csv', layout=m.layout, day=m.day, grade=m.grade) }}">Export to CSV</a>
+      <a class="btn secondary" href="{{ url_for('master.export_pdf', layout=m.layout, day=m.day, grade=m.grade) }}">Download PDF</a>
+    </div>
+  </form>
+  <p class="section-note">
+    {% if m.layout == 'class' %}
+      Each row is a class; each cell shows the subject and its teacher (and room, if set).
+    {% else %}
+      Each row is a teacher; each cell shows the subject and the class. Empty cells are free periods.
+    {% endif %}
+    Red cells are clashes.
+  </p>
+</div>
+
+{% if shown_clashes %}
+<div class="card mt-clash-box no-print">
+  <strong>{{ m.clashes|length }} clash{{ '' if m.clashes|length == 1 else 'es' }} to fix</strong>
+  <span class="section-note" style="margin:0;"> — the same teacher or room is booked for two classes in one period. Fix them in the Timetable Builder.</span>
+  <ul>
+    {% for line in shown_clashes %}<li>{{ line }}</li>{% endfor %}
+  </ul>
+  {% if m.clashes|length > shown_clashes|length %}
+  <p class="section-note">…and {{ m.clashes|length - shown_clashes|length }} more.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if not m.has_entries %}
+<div class="card">
+  <p class="section-note" style="margin:0;">
+    No lessons have been placed yet.
+    {% if can('timetable_edit') %}Use the <a href="{{ url_for('builder_page') }}">Timetable Builder</a> to generate or fill in the timetable, then come back here.{% endif %}
+  </p>
+</div>
+{% else %}
+  {% include "master/_grid.html" %}
+{% endif %}
+{% endblock %}

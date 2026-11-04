@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Add a book{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Add a book</h3>
+  <p class="section-note">A title can have many copies. Each copy gets its own accession number, which you write or stick inside the book (you can print barcode labels afterwards).</p>
+  <form method="post" action="{{ url_for('library.book_new') }}">
+    {% set v = form %}
+    {% include "library/_book_fields.html" %}
+    <div class="form-row">
+      <div><label>Number of copies</label><input type="number" name="copies" min="0" max="500" value="{{ form.copies or 1 }}"></div>
+      <div style="flex:2;"><label>Or type your own accession numbers (separate with spaces, commas or new lines)</label>
+        <input type="text" name="accessions" value="{{ form.accessions or '' }}" placeholder="Leave empty to number them automatically ({{ s.accession_prefix }}00001…)"></div>
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+      <input type="checkbox" name="force" value="1"> Add as a separate title anyway (skip the duplicate check)
+    </label>
+    <div class="inline-actions" style="margin-top:16px;">
+      <button type="submit">Save book</button>
+      <a class="btn secondary" href="{{ url_for('library.catalogue') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

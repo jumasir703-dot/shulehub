@@ -1,0 +1,33 @@
+<style>
+  .lib-results{ display:none; position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--paper);
+    border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); max-height:320px; overflow-y:auto; }
+  .lib-result{ display:block; width:100%; text-align:left; background:transparent; color:var(--ink); border:0;
+    border-bottom:1px solid var(--line); border-radius:0; padding:8px 12px; font-weight:400; }
+  .lib-result:hover, .lib-result:focus{ background:var(--gold-100); color:var(--ink); }
+  .lib-result small{ display:block; color:var(--muted); }
+  .lib-pick{ position:relative; }
+  .lib-big{ font-size:1.05rem; padding:11px 12px; }
+  .lib-person{ border-left:4px solid var(--green-500); }
+  .lib-person.warn{ border-left-color:var(--gold-500); }
+  .lib-inline{ display:inline; margin:0; }
+  .lib-inline button{ margin:0; }
+  .lib-pager{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:14px; font-size:.88rem; }
+  .lib-fine-form{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .lib-fine-form input[type=text]{ width:170px; padding:5px 8px; }
+  td.lib-wrap{ max-width:340px; }
+  .lib-quiet{ color:var(--muted); font-size:.82rem; }
+</style>
+<nav class="subnav no-print">
+  {% set ep = request.endpoint or '' %}
+  {% if can('library') %}
+  <a href="{{ url_for('library.index') }}" class="{{ 'active' if ep == 'library.index' else '' }}">Desk</a>
+  <a href="{{ url_for('library.circulation') }}" class="{{ 'active' if ep == 'library.circulation' else '' }}">Issue / Return</a>
+  {% endif %}
+  <a href="{{ url_for('library.catalogue') }}" class="{{ 'active' if ep in ('library.catalogue', 'library.book_detail', 'library.book_new', 'library.books_import') else '' }}">Catalogue</a>
+  {% if can('library') %}
+  <a href="{{ url_for('library.loans') }}" class="{{ 'active' if ep in ('library.loans', 'library.borrower') else '' }}">Loans</a>
+  <a href="{{ url_for('library.fines') }}" class="{{ 'active' if ep == 'library.fines' else '' }}">Fines</a>
+  <a href="{{ url_for('library.reports') }}" class="{{ 'active' if ep in ('library.reports', 'library.clearance') else '' }}">Reports</a>
+  <a href="{{ url_for('library.settings') }}" class="{{ 'active' if ep == 'library.settings' else '' }}">Settings</a>
+  {% endif %}
+</nav>

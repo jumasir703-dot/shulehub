@@ -1,7 +1,7 @@
 // Service worker: makes the app installable and lets the timetable view and
 // the guide open without data. Bump CACHE_NAME whenever style.css, csrf.js or
 // this file changes, so devices pick up the new version.
-const CACHE_NAME = "shulehub-cache-v7";
+const CACHE_NAME = "shulehub-cache-v9";
 
 const APP_SHELL = [
   "/static/style.css",

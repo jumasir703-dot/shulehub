@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "library/_macros.html" import loan_table with context %}
+{% block title %}{{ b.name }} · Library{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+{% set here = url_for('library.borrower', kind=b.kind, borrower_id=b.id) %}
+<div class="card lib-person {{ '' if cleared else 'warn' }}">
+  <h2 style="margin:0 0 4px;">{{ b.name }}</h2>
+  <p class="section-note" style="margin:0;">
+    {{ b.type_label }}{% if b.ref %} · {{ b.ref }}{% endif %}{% if b.sub and b.kind == 's' %} · {{ b.sub }}{% endif %}
+    {% if not b.active %} · <span class="badge off">no longer active</span>{% endif %}
+    {% if guardian and (guardian[0] or guardian[1]) %} · Guardian: {{ guardian[0] }} {{ guardian[1] }}{% endif %}
+  </p>
+  <div class="inline-actions" style="margin-top:12px;">
+    {% if cleared %}<span class="badge ok">Library cleared</span>
+    {% else %}<span class="badge bad">Not cleared</span>{% endif %}
+    <span class="badge">{{ current|length }} of {{ limit }} book{{ '' if limit == 1 else 's' }} out</span>
+    {% if owed %}<span class="badge bad">Fine owed KES {{ owed|libmoney }}</span>{% endif %}
+    {% if b.active %}<a class="btn small" href="{{ url_for('library.circulation', borrower=b.key) }}">Issue a book</a>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Books held now</h3>
+  {{ loan_table(current, actions=True, show_borrower=False, next_url=here) }}
+</div>
+
+{% if unpaid %}
+<div class="card">
+  <h3 style="margin-top:0;">Fines owed</h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Book</th><th>Returned</th><th class="money">Fine (KES)</th><th></th></tr></thead>
+    <tbody>
+    {% for l in unpaid %}
+      <tr><td>{{ l.title }}<br><span class="lib-quiet">{{ l.accession_no }}{% if l.outcome == 'lost' %} · lost{% endif %}</span></td>
+        <td>{{ l.returned_on|libdate }}</td><td class="money">{{ l.fine_amount|libmoney }}</td>
+        <td>
+          <form class="lib-fine-form" method="post" action="{{ url_for('library.fine_settle', loan_id=l.id) }}">
+            <input type="hidden" name="next" value="{{ here }}">
+            <input type="text" name="note" placeholder="Note / reason" maxlength="200">
+            <button type="submit" name="action" value="paid" class="small">Mark paid</button>
+            <button type="submit" name="action" value="waive" class="small secondary">Waive</button>
+          </form></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-top:0;">History</h3>
+  {{ loan_table(history, show_borrower=False) }}
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{# Styles for the shared timetable grid (screen + print). #}
+<style>
+  .mt-scroll{ overflow-x:auto; border:1px solid var(--green-900); border-radius:6px; background:var(--paper); }
+  table.mt-table{ border-collapse:collapse; width:100%; font-size:.78rem; }
+  .mt-table th, .mt-table td{ border:1px solid var(--line); padding:4px 5px; vertical-align:middle; }
+  .mt-table thead th{
+    background:var(--green-900); color:#fff; text-align:center; font-weight:600;
+    border-color:var(--green-900); white-space:nowrap; padding:6px 5px;
+  }
+  .mt-table thead th span{ display:block; font-weight:400; font-size:.68rem; opacity:.85; }
+  .mt-table .mt-first{
+    position:sticky; left:0; z-index:1; min-width:140px; width:1%; text-align:left;
+    background:var(--paper); border-right:2px solid var(--green-900); font-weight:600;
+  }
+  .mt-table thead .mt-first{ background:var(--green-900); z-index:2; }
+  .mt-table .mt-first small{ display:block; font-weight:400; color:var(--muted); font-size:.7rem; }
+  .mt-table td{ min-width:92px; text-align:center; line-height:1.25; }
+  .mt-table td.mt-brk, .mt-table thead th.mt-brk{ background:var(--gold-100); color:var(--green-900); min-width:0; width:34px; }
+  .mt-table thead th.mt-brk{ background:#d9c98f; color:var(--green-900); font-size:.68rem; white-space:normal; }
+  .mt-table td.mt-count{ min-width:0; width:48px; font-variant-numeric:tabular-nums; color:var(--muted); }
+  .mt-table td.mt-clash{ background:var(--danger-bg); box-shadow:inset 0 0 0 2px var(--danger); }
+  .mt-piece + .mt-piece{ margin-top:4px; padding-top:4px; border-top:1px dashed var(--line); }
+  .mt-piece b{ display:block; font-weight:600; }
+  .mt-piece span{ color:var(--muted); font-size:.72rem; }
+  .mt-day{ margin-top:22px; }
+  .mt-day h3{ margin:0 0 8px; }
+  .mt-clash-box{ border-left:4px solid var(--danger); background:var(--danger-bg); }
+  .mt-clash-box ul{ margin:8px 0 0 18px; padding:0; font-size:.88rem; }
+  .form-row > .mt-actions{ flex:0 0 auto; min-width:0; display:flex; gap:8px; flex-wrap:wrap; }
+  .mt-print-title{ display:none; }
+
+  @media print{
+    .topbar, .no-print, .flash-wrap{ display:none !important; }
+    body, .shell, .content{ background:#fff !important; }
+    .content{ padding:0 !important; max-width:none !important; }
+    .mt-scroll{ overflow:visible; border:none; }
+    table.mt-table{ font-size:7pt; }
+    .mt-table .mt-first{ position:static; }
+    .mt-table td, .mt-table th{ padding:2px 3px; }
+    .mt-piece span, .mt-first small, .mt-table thead th span{ font-size:6pt; }
+    .mt-print-title{ display:block; margin:0 0 2px; font-size:11pt; font-weight:700; color:#103524; }
+    .mt-day h3{ margin:0 0 4px; font-size:10pt; }
+    .mt-day{ break-after:page; margin-top:0; }
+    .mt-day:last-of-type{ break-after:auto; }
+    .mt-table tr{ break-inside:avoid; }
+    .mt-table{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    @page{ size:landscape; margin:8mm; }
+  }
+</style>

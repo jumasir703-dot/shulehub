@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Library settings{% endblock %}
+{% block content %}
+<h1>Library</h1>
+{% include "library/_nav.html" %}
+
+<form method="post" action="{{ url_for('library.settings') }}">
+  <div class="card">
+    <h3 style="margin-top:0;">Borrowing rules</h3>
+    <div class="form-row">
+      <div><label>Loan period: students (days)</label><input type="number" name="loan_days_student" min="1" max="365" value="{{ s.loan_days_student }}" required></div>
+      <div><label>Loan period: teachers (days)</label><input type="number" name="loan_days_teacher" min="1" max="365" value="{{ s.loan_days_teacher }}" required></div>
+      <div><label>Most books at once: students</label><input type="number" name="max_loans_student" min="1" max="50" value="{{ s.max_loans_student }}" required></div>
+      <div><label>Most books at once: teachers</label><input type="number" name="max_loans_teacher" min="1" max="100" value="{{ s.max_loans_teacher }}" required></div>
+      <div><label>Renewals allowed per loan</label><input type="number" name="max_renewals" min="0" max="10" value="{{ s.max_renewals }}" required></div>
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+      <input type="checkbox" name="block_when_overdue" value="1" {{ 'checked' if s.block_when_overdue }}> Don't lend to someone who has an overdue book
+    </label>
+    <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <input type="checkbox" name="block_when_fines" value="1" {{ 'checked' if s.block_when_fines }}> Don't lend to someone who owes a library fine
+    </label>
+    <p class="section-note">The librarian can still tick “Allow anyway” on the issue screen when there is a good reason.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Fines</h3>
+    <div class="form-row">
+      <div><label>Fine per day late (KES, 0 = no fines)</label><input type="number" name="fine_per_day" min="0" step="0.5" value="{{ s.fine_per_day }}" required></div>
+      <div><label>Grace days before fines start</label><input type="number" name="fine_grace_days" min="0" max="60" value="{{ s.fine_grace_days }}" required></div>
+      <div><label>Charge for a lost book with no price (KES)</label><input type="number" name="lost_fee_default" min="0" step="1" value="{{ s.lost_fee_default }}" required></div>
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+      <input type="checkbox" name="fine_cap_to_price" value="1" {{ 'checked' if s.fine_cap_to_price }}> A late fine never goes above the book's price
+    </label>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Accession numbers</h3>
+    <div class="form-row">
+      <div><label>Prefix for new copies</label><input type="text" name="accession_prefix" value="{{ s.accession_prefix }}" maxlength="12"></div>
+    </div>
+    <p class="section-note">New copies are numbered {{ s.accession_prefix }}{{ '%05d' % s.next_accession }}, then the next number, and so on. Changing the prefix only affects copies added from now on.</p>
+  </div>
+
+  <button type="submit">Save settings</button>
+</form>
+{% endblock %}

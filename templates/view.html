@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% block body_class %}print-wide{% endblock %}
 {% block title %}View / Export{% endblock %}
 {% block content %}
 <h1>View / Export</h1>
 
 <div class="card">
-  <form method="get" class="form-row" style="margin-top:0;">
+  <form method="get" class="form-row no-print" style="margin-top:0;">
     <div>
       <label>View by</label>
       <select name="mode" onchange="this.form.submit()">
@@ -38,7 +39,7 @@
 
   {% if grid %}
     {% set title, days, display_rows, cells = grid %}
-    <h3 style="margin-top:20px;">{{ title }}</h3>
+    <h3 class="tt-heading">{{ title }}</h3>
     <div style="overflow-x:auto;">
     <table class="tt-view-table">
       <thead>
@@ -57,9 +58,16 @@
         </tr>
         {% else %}
         <tr>
-          <td>{{ row.plabel or ('P' ~ row.period_number) }} <span class="section-note" style="margin:0;">{{ row.start_time }}–{{ row.end_time }}</span></td>
+          <td>{{ row.plabel or ('P' ~ row.period_number) }} <span class="tt-time">{{ row.start_time }}–{{ row.end_time }}</span></td>
           {% for d in days %}
-            <td>{{ cells.get((d, row.period_number), '—') }}</td>
+            {% set cell = cells.get((d, row.period_number)) %}
+            <td{% if cell and cell.pieces|length > 1 %} class="tt-multi"{% endif %}>
+              {%- if cell -%}
+                {%- for p in cell.pieces -%}
+                <div class="tt-piece"><strong>{{ p.subject }}</strong>{% if p.detail %} <span>{{ p.detail }}</span>{% endif %}</div>
+                {%- endfor -%}
+              {%- else -%}<span class="tt-empty">—</span>{%- endif -%}
+            </td>
           {% endfor %}
         </tr>
         {% endif %}

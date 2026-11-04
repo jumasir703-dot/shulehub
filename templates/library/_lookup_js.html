@@ -1,0 +1,41 @@
+<script>
+  // Type-ahead for the borrower and book boxes.
+  //   libLookup(input, url, renderItem(item) -> html, onPick(item))
+  window.libEsc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+  };
+  window.libLookup = function (input, url, render, pick) {
+    var wrap = input.parentNode, box = document.createElement('div'), timer = null, seq = 0;
+    box.className = 'lib-results';
+    wrap.classList.add('lib-pick');
+    wrap.appendChild(box);
+    input.setAttribute('autocomplete', 'off');
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      var q = input.value.trim();
+      if (q.length < 2) { box.style.display = 'none'; return; }
+      var mine = ++seq;
+      timer = setTimeout(function () {
+        fetch(url + '?q=' + encodeURIComponent(q), {credentials: 'same-origin'})
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (items) {
+            if (mine !== seq) return;
+            box.innerHTML = '';
+            items.forEach(function (it) {
+              var b = document.createElement('button');
+              b.type = 'button'; b.className = 'lib-result'; b.innerHTML = render(it);
+              b.addEventListener('click', function () { box.style.display = 'none'; pick(it); });
+              box.appendChild(b);
+            });
+            if (!items.length) box.innerHTML = '<div class="lib-result lib-quiet">No match</div>';
+            box.style.display = 'block';
+          }).catch(function () { box.style.display = 'none'; });
+      }, 180);
+    });
+    document.addEventListener('click', function (e) {
+      if (!wrap.contains(e.target)) box.style.display = 'none';
+    });
+  };
+</script>

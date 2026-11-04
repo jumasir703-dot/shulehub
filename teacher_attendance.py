@@ -31,6 +31,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 import branding
 import database as db
+import theme
 
 teacher_attendance_bp = Blueprint("teacher_attendance", __name__, url_prefix="/teacher-attendance")
 
@@ -290,11 +291,11 @@ def export_pdf():
         rest = (page[0] - 24 * mm - first) / (len(head) - 1)
         t = Table(data, repeatRows=1, colWidths=[first] + [rest] * (len(head) - 1))
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#103524")),
+            ("BACKGROUND", (0, 0), (-1, 0), theme.GREEN_900),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white), ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9), ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e3dcc9")),
+            ("FONTSIZE", (0, 0), (-1, 0), 9), ("GRID", (0, 0), (-1, -1), 0.5, theme.LINE),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#fbf8f0")])]))
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, theme.ROW_ALT])]))
         story.append(t)
     doc.build(story)
     return Response(buf.getvalue(), mimetype="application/pdf", headers={

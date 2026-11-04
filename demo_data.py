@@ -19,6 +19,7 @@ import os
 import random
 from datetime import date, timedelta
 
+import branding
 import database as db
 import fees
 import scheduler
@@ -85,10 +86,11 @@ def _weekdays_back(end, count):
     return list(reversed(days))
 
 
-def build(path, admin):
+def build(path, admin, logo_png=None):
     """Create the example database at `path` and fill it.
     `admin` = {"id", "username", "full_name", "password_hash"} of the person
-    who is looking at the example. Returns a small dict of counts."""
+    who is looking at the example. `logo_png` (PNG bytes) becomes the example
+    school's logo, so its printouts carry one. Returns a small dict of counts."""
     for stale in (path, path + "-journal"):
         if os.path.exists(stale):
             os.remove(stale)
@@ -97,6 +99,8 @@ def build(path, admin):
     try:
         db.init_db()
         counts = _populate(admin, random.Random(2026), date.today())
+        if logo_png:
+            branding.save_logo(logo_png)
     finally:
         db.reset_db_path(token)
     return counts

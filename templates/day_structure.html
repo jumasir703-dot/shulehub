@@ -11,7 +11,7 @@
 </div>
 
 {% if clashes %}
-<div class="card" style="border-left:4px solid #b4531a;">
+<div class="card" style="border-left:4px solid var(--warn-accent);">
   <h3>Double-bookings to fix</h3>
   <p class="section-note">These teachers or rooms are booked in two classes at overlapping times. This happens when classes run on
     different day structures. Open the Timetable Builder for one of the classes and move the lesson.</p>
@@ -30,7 +30,7 @@
     <thead><tr><th>Profile</th><th>Day</th><th>Lessons</th><th>Used by</th><th></th></tr></thead>
     <tbody>
     {% for p in profiles %}
-      <tr {% if p.id == current.id %}style="background:#fbf8f0;"{% endif %}>
+      <tr {% if p.id == current.id %}style="background:var(--row-alt);"{% endif %}>
         <td><strong>{{ p.name }}</strong>{% if p.is_default %} <span class="section-note">(default)</span>{% endif %}</td>
         <td>{{ p.start_time }}–{{ p.day_end }}</td>
         <td>{{ p.periods_per_day }} × {{ p.lesson_minutes }} min{% if p.breaks %}, {{ p.breaks|length }} break{{ 's' if p.breaks|length != 1 }}{% endif %}</td>
@@ -123,7 +123,7 @@ function preview(){
   var rows='';
   for(var p=1;p<=n;p++){
     rows+='<tr><td>Lesson '+p+'</td><td>'+fmt(t)+'–'+fmt(t+len)+'</td></tr>'; t+=len;
-    if(br[p]){rows+='<tr style="background:#fbf8f0;"><td>'+br[p].l+'</td><td>'+fmt(t)+'–'+fmt(t+br[p].d)+'</td></tr>'; t+=br[p].d;}
+    if(br[p]){rows+='<tr style="background:var(--row-alt);"><td>'+br[p].l+'</td><td>'+fmt(t)+'–'+fmt(t+br[p].d)+'</td></tr>'; t+=br[p].d;}
   }
   rows+='<tr><td><strong>Day ends</strong></td><td><strong>'+fmt(t)+'</strong></td></tr>';
   document.querySelector('#preview tbody').innerHTML=rows;

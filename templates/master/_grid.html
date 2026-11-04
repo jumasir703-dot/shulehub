@@ -1,0 +1,51 @@
+{# Shared grid used by the Master Timetable and the Remedial Timetable.
+   Expects `m` shaped like master.build_master()'s result. #}
+  {% for t in m.tables %}
+  <section class="mt-day">
+    <p class="mt-print-title">{{ m.title }}</p>
+    <h3>{{ t.day }}</h3>
+    {% if t.rows %}
+    <div class="mt-scroll">
+      <table class="mt-table">
+        <thead>
+          <tr>
+            <th class="mt-first">{{ 'Class' if m.layout == 'class' else 'Teacher' }}</th>
+            {% for c in m.columns %}
+              {% if c.type == 'break' %}
+              <th class="mt-brk">{{ c.label }}</th>
+              {% else %}
+              <th>{{ m.col_prefix }}{{ c.period_number }}<span>{{ c.start_time }}–{{ c.end_time }}</span></th>
+              {% endif %}
+            {% endfor %}
+            <th title="{{ m.count_label }} that day">{{ m.count_label }}</th>
+            <th title="Free periods that day">Free</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in t.rows %}
+          <tr>
+            <th class="mt-first" scope="row">{{ r.label }}{% if r.sub %}<small>{{ r.sub }}</small>{% endif %}</th>
+            {% for c in m.columns %}
+              {% if c.type == 'break' %}
+              <td class="mt-brk"></td>
+              {% else %}
+                {% set pieces = r.cells[c.period_number] %}
+                <td class="{{ 'mt-clash' if pieces|selectattr('clash')|list|length }}">
+                  {% for p in pieces %}
+                  <div class="mt-piece"><b>{{ p.subject }}</b><span>{{ p.other }}{% if p.room %}, {{ p.room }}{% endif %}</span></div>
+                  {% endfor %}
+                </td>
+              {% endif %}
+            {% endfor %}
+            <td class="mt-count">{{ r.lessons }}</td>
+            <td class="mt-count">{{ r.free }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="section-note">Nothing to show for this selection.</p>
+    {% endif %}
+  </section>
+  {% endfor %}

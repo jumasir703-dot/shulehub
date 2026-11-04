@@ -38,6 +38,11 @@ SERVICES = [
      "Mark daily attendance and see attendance reports."),
     ("fees", "Fees & payments",
      "Fee structure, invoices, payments, M-Pesa import, receipts and balances."),
+    ("library", "Library",
+     "Catalogue, issue and return books, fines, labels and library reports."),
+    ("messaging", "Send messages",
+     "Send text messages and emails to guardians: exam results, fee balances, meetings and notices. "
+     "The gateway settings (SMS and email accounts) stay administrator-only."),
 ]
 SERVICE_KEYS = [k for k, _, _ in SERVICES]
 SERVICE_LABELS = {k: label for k, label, _ in SERVICES}
@@ -73,6 +78,8 @@ _EXACT = {
     "analytics.exam_overview": _RESULTS_VIEW, "analytics.merit_list": _RESULTS_VIEW,
     "analytics.subject_analysis": _RESULTS_STAFF, "analytics.merit_csv": _RESULTS_STAFF,
     "analytics.merit_pdf": _RESULTS_STAFF, "analytics.reports_pdf": _RESULTS_STAFF,
+    # SMS / email account settings hold passwords and API keys: administrator only
+    "msg.settings": (), "msg.settings_save": (), "msg.test_sms": (), "msg.test_email": (),
 }
 
 _TIMETABLE_EDIT = {
@@ -87,12 +94,19 @@ _TIMETABLE_EDIT = {
     "rules_page", "save_rules", "add_subject_rule", "delete_subject_rule",
 }
 
+# Remedial (extra hours) timetable: viewers can view and export it; everything
+# else on it (setup, plan, generate, clear) is for people who can edit timetables.
+_REMEDIAL_VIEW = {"remedial.view_page", "remedial.export_csv", "remedial.export_pdf"}
+
 _PREFIXES = (
+    ("master.", "timetable_view"),
     ("analytics.", "exams"),
     ("mymarks.", "marks_entry"),
     ("results.", "results_publish"),
     ("attendance.", "attendance"),
     ("fees.", "fees"),
+    ("library.", "library"),
+    ("msg.", "messaging"),
     ("school.", "students_manage"),
 )
 
@@ -104,6 +118,10 @@ def services_for(endpoint):
         found = _EXACT[endpoint]
         return found if isinstance(found, tuple) else (found,)
     if endpoint in _TIMETABLE_EDIT:
+        return ("timetable_edit",)
+    if endpoint in _REMEDIAL_VIEW:
+        return ("timetable_view",)
+    if endpoint.startswith("remedial."):
         return ("timetable_edit",)
     for prefix, service in _PREFIXES:
         if endpoint.startswith(prefix):

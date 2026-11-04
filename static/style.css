@@ -6,20 +6,47 @@
    cream+terracotta or navy+bootstrap-blue look.
 ------------------------------------------------------------------ */
 :root{
+  /* Brand */
   --ink:        #1b2b22;
   --green-900:  #103524;
   --green-700:  #1d5c3f;
   --green-500:  #2f7d57;
   --gold-500:   #c8932b;
+  --gold-200:   #f3ead0;
   --gold-100:   #f4e6c6;
-  --parchment:  #f6f2e9;
-  --paper:      #fffdf8;
-  --line:       #e3dcc9;
-  --muted:      #6f6a5b;
-  --danger:     #a3372c;
-  --danger-bg:  #fbe9e6;
-  --success-bg: #e7f2ea;
-  --success-fg: #1d5c3f;
+  --gold-700:   #8a6212;   /* gold dark enough for rings and text on light backgrounds */
+
+  /* Surfaces and lines */
+  --parchment:  #f6f2e9;   /* page */
+  --paper:      #fffdf8;   /* cards, inputs */
+  --row-alt:    #fbf8f0;   /* table row hover / highlight */
+  --track:      #f1ecdd;   /* empty part of a bar */
+  --line:       #e3dcc9;   /* soft decorative borders */
+  --field-border: #8f8870; /* borders of inputs and selects: strong enough to see outdoors (3:1) */
+  --muted:      #655f50;   /* secondary text, 5:1 or better on every surface */
+  --focus:      var(--gold-700);
+
+  /* Status colours: a text colour, a fill and a border for each meaning.
+     Use these everywhere instead of writing a new hex code. */
+  --danger:     #a3372c;  --danger-dark: #832a21;
+  --danger-bg:  #fbe9e6;  --danger-line: #e3b7ae;
+  --success-fg: #1d5c3f;  --success-bg:  #e7f2ea;  --success-line: #b9d9c4;
+  --warn-accent: #b4531a;  /* the stronger orange used for a left-hand warning stripe */
+  --warn-fg:    #7a5a06;  --warn-bg:     #fbefc9;  --warn-line:    #e5cf8e;
+  --info:       #46627f;  --info-bg:     #e3ebf3;  --info-line:    #b8c9da;
+  --off-fg:     #5b5648;  --off-bg:      #e6e3da;
+  --chip-bg:    #eee9da;
+
+  /* Result levels (grades, bars, cells): top > good > mid > low */
+  --lv-top-fg:  #0f4a2c;  --lv-top-bg:  #cfe8d8;  --lv-top-bar:  #2f7d57;
+  --lv-good-fg: #2f5a1c;  --lv-good-bg: #e3f1d8;  --lv-good-bar: #7bb661;
+  --lv-mid-fg:  #7a5a06;  --lv-mid-bg:  #fbefc9;  --lv-mid-bar:  #e0b73c;
+  --lv-low-fg:  #8a2b20;  --lv-low-bg:  #f8dcd6;  --lv-low-bar:  #cf6a5a;
+
+  /* Official-portal look for timetables (mirrors PORTAL_* in theme.py) */
+  --portal-navy:  #12356b;  --portal-blue: #1f5fa8;  --portal-tint: #e9f0fa;
+  --portal-break: #eef1f6;  --portal-line: #aab8cf;  --portal-muted: #52607a;
+
   --radius:     10px;
   --shadow:     0 1px 2px rgba(16,53,36,0.06), 0 4px 14px rgba(16,53,36,0.06);
   font-size: 16px;
@@ -112,8 +139,8 @@ h1,h2,h3{
 /* ---- Flash messages ---- */
 .flash-wrap{ margin-bottom: 16px; display:flex; flex-direction: column; gap: 8px; }
 .flash{ padding: 10px 14px; border-radius: var(--radius); font-size: .9rem; }
-.flash-error{ background: var(--danger-bg); color: var(--danger); border: 1px solid #e3b7ae; }
-.flash-success{ background: var(--success-bg); color: var(--success-fg); border: 1px solid #b9d9c4; }
+.flash-error{ background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-line); }
+.flash-success{ background: var(--success-bg); color: var(--success-fg); border: 1px solid var(--success-line); }
 
 /* ---- Layout helpers ---- */
 .grid-2{ display:grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
@@ -128,13 +155,13 @@ h1,h2,h3{
 table{ width:100%; border-collapse: collapse; font-size: .92rem; }
 th, td{ text-align:left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
 th{ color: var(--green-900); font-weight: 600; background: var(--gold-100); }
-tr:hover td{ background: #fbf8f0; }
+tr:hover td{ background: var(--row-alt); }
 
 /* ---- Forms ---- */
 label{ display:block; font-size: .82rem; color: var(--muted); margin-bottom: 4px; }
 input[type=text], input[type=email], input[type=number], select{
   width: 100%; padding: 8px 10px; border-radius: 7px;
-  border: 1px solid var(--line); background: var(--paper);
+  border: 1px solid var(--field-border); background: var(--paper);
   font-size: .92rem; color: var(--ink);
 }
 input:focus, select:focus{ outline: 2px solid var(--green-500); outline-offset: 1px; }
@@ -149,9 +176,25 @@ button, .btn{
 }
 button:hover, .btn:hover{ background: var(--green-900); }
 button.secondary, .btn.secondary{ background: transparent; color: var(--green-900); border: 1px solid var(--green-700); }
-button.secondary:hover{ background: var(--gold-100); }
+button.secondary:hover, .btn.secondary:hover{ background: var(--gold-100); color: var(--green-900); }
+button:active, .btn:active{ transform: translateY(1px); }
+button:disabled, .btn[aria-disabled=true]{ opacity: .55; cursor: not-allowed; }
+button:disabled:hover{ background: var(--green-700); }
+
+/* A clear ring for keyboard (and switch/D-pad) users, on every control */
+a:focus-visible, button:focus-visible, .btn:focus-visible, summary:focus-visible,
+.tabs a:focus-visible, .menu-panel a:focus-visible, .subnav a:focus-visible{
+  outline: 3px solid var(--focus); outline-offset: 2px;
+}
+input:focus, select:focus, textarea:focus{ outline: 2px solid var(--green-500); outline-offset: 1px; }
+
+/* ---- Alerts (inline messages inside a page) ---- */
+.alert{ padding: 10px 14px; border-radius: var(--radius); font-size: .9rem; border: 1px solid var(--info-line); background: var(--info-bg); color: var(--info); }
+.alert.error{ background: var(--danger-bg); color: var(--danger); border-color: var(--danger-line); }
+.alert.warn{ background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-line); }
+.alert.ok{ background: var(--success-bg); color: var(--success-fg); border-color: var(--success-line); }
 button.danger{ background: var(--danger); }
-button.danger:hover{ background: #832a21; }
+button.danger:hover{ background: var(--danger-dark); }
 .inline-form{ display:inline; }
 
 /* ---- Chips / pills for grade list ---- */
@@ -187,16 +230,16 @@ button.danger:hover{ background: #832a21; }
   transition: box-shadow .12s ease, border-color .12s ease;
 }
 .tt-cell:hover{ border-color: var(--green-500); box-shadow: var(--shadow); }
-.tt-cell.filled{ background: var(--success-bg); border-color: #b9d9c4; cursor: grab; }
+.tt-cell.filled{ background: var(--success-bg); border-color: var(--success-line); cursor: grab; }
 .tt-cell.filled:active{ cursor: grabbing; }
 .tt-cell.dragging{ opacity: .4; }
 .tt-cell.drag-over{ border-color: var(--green-700); box-shadow: 0 0 0 2px var(--green-500) inset; }
 .tt-cell .subj{ font-weight: 700; color: var(--green-900); }
 .tt-cell .meta{ color: var(--muted); }
-.tt-cell .empty-label{ color: #b5ad96; font-style: italic; }
+.tt-cell .empty-label{ color: var(--muted); font-style: italic; }
 .tt-break{
   grid-column: 1 / -1;
-  background: repeating-linear-gradient(45deg, var(--gold-100), var(--gold-100) 10px, #f3ead0 10px, #f3ead0 20px);
+  background: repeating-linear-gradient(45deg, var(--gold-100), var(--gold-100) 10px, var(--gold-200) 10px, var(--gold-200) 20px);
   color: var(--green-900); font-weight: 600; font-size: .8rem;
   text-align: center; padding: 6px; border-radius: 6px;
 }
@@ -207,16 +250,41 @@ tr.break-row td{
   font-weight: 600; text-align: center;
 }
 
-/* ---- Full grid (rows + columns) for the timetable view/export table ---- */
+/* ---- Full grid (rows + columns) for the timetable view/export table ----
+   Official-portal look: navy header bar, pale-blue period column, cool grey grid.
+   Each lesson is its own block inside the cell, so long electives wrap. */
+.tt-heading{
+  color: var(--portal-navy); text-transform: uppercase; letter-spacing: .03em; font-size: 1.05rem;
+  border-bottom: 3px solid var(--portal-navy); padding-bottom: 6px; margin: 20px 0 12px;
+}
 table.tt-view-table{
-  border: 1px solid var(--green-900);
-  border-collapse: collapse;
+  width: 100%; border-collapse: collapse; table-layout: fixed;
+  border: 2px solid var(--portal-navy); background: #fff;
 }
-table.tt-view-table th, table.tt-view-table td{
-  border: 1px solid var(--line);
+table.tt-view-table thead th{
+  background: var(--portal-navy); color: #fff; text-align: center;
+  text-transform: uppercase; letter-spacing: .05em; font-size: .78rem;
+  border: 1px solid var(--portal-navy); padding: 9px 6px;
 }
-table.tt-view-table th{
-  border-color: var(--green-900);
+table.tt-view-table td{
+  border: 1px solid var(--portal-line); background: #fff; text-align: center;
+  vertical-align: middle; padding: 6px 7px; overflow-wrap: anywhere;
+}
+table.tt-view-table td:first-child{
+  width: 96px; background: var(--portal-tint); color: var(--portal-navy); font-weight: 700; white-space: nowrap;
+}
+table.tt-view-table tr:hover td:not(:first-child){ background: #f5f8fd; }
+.tt-time{ display: block; font-weight: 400; font-size: .72rem; color: var(--portal-muted); }
+.tt-piece strong{ display: block; font-size: .86rem; color: var(--ink); }
+.tt-piece span{ display: block; font-size: .74rem; color: var(--portal-muted); }
+.tt-empty{ color: var(--portal-line); }
+/* several lessons at once (elective blocks): one compact line each, divided */
+.tt-multi .tt-piece{ padding: 2px 0; }
+.tt-multi .tt-piece + .tt-piece{ border-top: 1px solid var(--portal-line); }
+.tt-multi .tt-piece strong, .tt-multi .tt-piece span{ display: inline; font-size: .76rem; }
+table.tt-view-table tr.break-row td{
+  background: var(--portal-break); color: var(--portal-navy); font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em; font-size: .76rem; text-align: center;
 }
 
 /* ---- Modal ---- */
@@ -233,7 +301,7 @@ table.tt-view-table th{
 .modal .field{ margin-bottom: 12px; }
 .modal .actions{ display:flex; gap: 8px; margin-top: 16px; }
 .conflict-box{
-  background: var(--danger-bg); color: var(--danger); border: 1px solid #e3b7ae;
+  background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-line);
   border-radius: 7px; padding: 10px; font-size: .82rem; margin-top: 10px;
 }
 
@@ -324,7 +392,7 @@ a{ color: var(--green-700); }
 .page-head{ display:flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .head-actions{ display:flex; gap: 8px; flex-wrap: wrap; }
 .card.callout{ border-left: 4px solid var(--gold-500); margin-bottom: 18px; }
-.card.danger-zone{ border-color: #e3b7ae; }
+.card.danger-zone{ border-color: var(--danger-line); }
 .grid-even{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; margin-top: 18px; }
 .grid-even > .card + .card{ margin-top: 0; }
 
@@ -368,23 +436,23 @@ a{ color: var(--green-700); }
 /* --- Grade chips + coloured cells (one colour language for both scales) --- */
 .chip{
   display:inline-block; padding: 1px 9px; border-radius: 999px; font-size: .76rem; font-weight: 700;
-  background: #eee9da; color: var(--ink); border: 1px solid transparent;
+  background: var(--chip-bg); color: var(--ink); border: 1px solid transparent;
 }
-.chip.lv-top, .cell.lv-top{ background: #cfe8d8; color: #0f4a2c; }
-.chip.lv-good, .cell.lv-good{ background: #e3f1d8; color: #2f5a1c; }
-.chip.lv-mid, .cell.lv-mid{ background: #fbefc9; color: #7a5a06; }
-.chip.lv-low, .cell.lv-low{ background: #f8dcd6; color: #8a2b20; }
+.chip.lv-top, .cell.lv-top{ background: var(--lv-top-bg); color: var(--lv-top-fg); }
+.chip.lv-good, .cell.lv-good{ background: var(--lv-good-bg); color: var(--lv-good-fg); }
+.chip.lv-mid, .cell.lv-mid{ background: var(--lv-mid-bg); color: var(--lv-mid-fg); }
+.chip.lv-low, .cell.lv-low{ background: var(--lv-low-bg); color: var(--lv-low-fg); }
 .cell{ display:inline-block; min-width: 34px; text-align:center; padding: 1px 6px; border-radius: 5px; font-variant-numeric: tabular-nums; }
 
 /* --- CSS bar chart (no JS/CDN so it works in the offline desktop build) --- */
 .bar-row{ display:flex; align-items:center; gap: 10px; margin: 6px 0; }
 .bar-label{ width: 44px; text-align:center; }
-.bar{ flex:1; background: #f1ecdd; border-radius: 6px; height: 16px; overflow:hidden; }
+.bar{ flex:1; background: var(--track); border-radius: 6px; height: 16px; overflow:hidden; }
 .bar i{ display:block; height: 100%; background: var(--green-500); border-radius: 6px; min-width: 0; }
-.bar i.lv-top{ background: #2f7d57; } .bar i.lv-good{ background: #7bb661; }
-.bar i.lv-mid{ background: #e0b73c; } .bar i.lv-low{ background: #cf6a5a; }
+.bar i.lv-top{ background: var(--lv-top-bar); } .bar i.lv-good{ background: var(--lv-good-bar); }
+.bar i.lv-mid{ background: var(--lv-mid-bar); } .bar i.lv-low{ background: var(--lv-low-bar); }
 .bar-val{ width: 28px; text-align:right; font-variant-numeric: tabular-nums; font-size: .86rem; }
-.meter{ display:block; width: 120px; height: 5px; background: #eee9da; border-radius: 3px; margin-top: 4px; overflow:hidden; }
+.meter{ display:block; width: 120px; height: 5px; background: var(--chip-bg); border-radius: 3px; margin-top: 4px; overflow:hidden; }
 .meter i{ display:block; height:100%; background: var(--green-500); }
 
 /* --- Marks entry grid --- */
@@ -395,7 +463,7 @@ table.marks-table thead th{ position: sticky; top: 0; z-index: 2; text-align:cen
 table.marks-table th.mk-head small, table.merit-table th small{ display:block; font-size: .68rem; color: var(--muted); }
 .sticky-col{ position: sticky; left: 0; background: var(--paper); z-index: 1; min-width: 190px; }
 thead .sticky-col{ background: var(--gold-100); z-index: 3; }
-tr:hover td.sticky-col{ background: #fbf8f0; }
+tr:hover td.sticky-col{ background: var(--row-alt); }
 .adm{ color: var(--muted); font-size: .76rem; margin-right: 4px; }
 input.mk{ width: 66px; text-align: center; padding: 6px 4px; font-variant-numeric: tabular-nums; }
 input.mk.mk-bad{ border-color: var(--danger); background: var(--danger-bg); }
@@ -408,17 +476,13 @@ table.merit-table th.num{ text-align: center; }
   .grid-even{ grid-template-columns: 1fr; }
   .sticky-col{ min-width: 140px; }
 }
-@media print{
-  .topbar, .subnav, .head-actions, .flash-wrap{ display:none !important; }
-  body{ background:#fff; }
-}
 
 /* =====================================================================
    School Management module (auth, students, attendance, fees)
    ===================================================================== */
 input[type=password], input[type=date], input[type=tel], input[type=search], textarea{
   width: 100%; padding: 8px 10px; border-radius: 7px;
-  border: 1px solid var(--line); background: var(--paper);
+  border: 1px solid var(--field-border); background: var(--paper);
   font-size: .92rem; color: var(--ink); font-family: inherit;
 }
 input[type=password]:focus, input[type=date]:focus, input[type=tel]:focus, textarea:focus{ outline: 2px solid var(--green-500); outline-offset: 1px; }
@@ -440,14 +504,15 @@ input[type=file]{ font-size: .88rem; max-width: 100%; }
 .auth-card .brand-line .brand-mark{ width: 38px; height: 38px; }
 .auth-card form > div{ margin-top: 14px; }
 .auth-card button[type=submit]{ width: 100%; justify-content: center; margin-top: 20px; padding: 11px 16px; }
-.auth-error{ background: var(--danger-bg); color: var(--danger); border: 1px solid #e3b7ae; border-radius: 8px; padding: 9px 12px; font-size: .88rem; margin-bottom: 4px; }
+.auth-error{ background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-line); border-radius: 8px; padding: 9px 12px; font-size: .88rem; margin-bottom: 4px; }
 
 /* --- Badges / status --- */
-.badge{ display:inline-block; padding: 1px 9px; border-radius: 999px; font-size: .74rem; font-weight: 700; background: #eee9da; color: var(--ink); }
-.badge.ok{ background: #cfe8d8; color: #0f4a2c; }
-.badge.warn{ background: #fbefc9; color: #7a5a06; }
-.badge.bad{ background: #f8dcd6; color: #8a2b20; }
-.badge.off{ background: #e6e3da; color: #6f6a5b; }
+.badge{ display:inline-block; padding: 1px 9px; border-radius: 999px; font-size: .74rem; font-weight: 700; background: var(--chip-bg); color: var(--ink); }
+.badge.ok{ background: var(--lv-top-bg); color: var(--lv-top-fg); }
+.badge.warn{ background: var(--warn-bg); color: var(--warn-fg); }
+.badge.bad{ background: var(--lv-low-bg); color: var(--lv-low-fg); }
+.badge.info{ background: var(--info-bg); color: var(--info); }
+.badge.off{ background: var(--off-bg); color: var(--off-fg); }
 
 /* --- Money --- */
 td.money, th.money, .money{ text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -467,9 +532,9 @@ td.money, th.money, .money{ text-align: right; font-variant-numeric: tabular-num
 .att-opts label:has(input:checked){ color: #fff; border-color: transparent; }
 .att-opts label.p:has(input:checked){ background: var(--green-500); }
 .att-opts label.a:has(input:checked){ background: var(--danger); }
-.att-opts label.l:has(input:checked){ background: var(--gold-500); }
-.att-opts label.e:has(input:checked){ background: #5d7a99; }
-.att-opts label:focus-within{ outline: 2px solid var(--green-500); outline-offset: 1px; }
+.att-opts label.l:has(input:checked){ background: var(--gold-500); color: var(--ink); }
+.att-opts label.e:has(input:checked){ background: var(--info); }
+.att-opts label:focus-within{ outline: 3px solid var(--focus); outline-offset: 2px; }
 input.att-note{ min-width: 140px; padding: 5px 8px; }
 .att-bar{ position: sticky; bottom: 0; background: var(--paper); border-top: 1px solid var(--line); padding: 12px 0; margin-top: 12px; display:flex; gap: 10px; flex-wrap: wrap; align-items:center; }
 .pct-low{ color: var(--danger); font-weight: 700; }
@@ -479,7 +544,6 @@ input.att-note{ min-width: 140px; padding: 5px 8px; }
 .inline-actions{ display:flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 button.small, .btn.small{ padding: 5px 11px; font-size: .8rem; }
 @media (max-width: 600px){ .kv{ grid-template-columns: 1fr; } .kv dt{ margin-top: 6px; } }
-@media print{ .att-bar, .menu, .inline-actions{ display:none !important; } }
 
 
 /* ---- School logo ---- */
@@ -491,7 +555,7 @@ button.small, .btn.small{ padding: 5px 11px; font-size: .8rem; }
 
 /* ---- Roles & Access ---- */
 .svc-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 16px; margin-top: 12px; }
-.svc{ display:flex; gap: 10px; align-items:flex-start; padding: 10px 12px; border: 1px solid var(--line, #e3dcc9); border-radius: 10px; background:#fff; cursor:pointer; }
+.svc{ display:flex; gap: 10px; align-items:flex-start; padding: 10px 12px; border: 1px solid var(--line, #e3dcc9); border-radius: 10px; background: var(--paper); cursor:pointer; }
 .svc input{ margin-top: 4px; flex: none; }
 .svc span{ display:block; }
 .svc small{ display:block; color: var(--muted); font-size: .8rem; line-height: 1.35; margin-top: 2px; }
@@ -503,15 +567,76 @@ button.small, .btn.small{ padding: 5px 11px; font-size: .8rem; }
 .demo-banner{
   position: sticky; top: 0; z-index: 50;
   display:flex; align-items:center; justify-content:center; gap: 14px; flex-wrap: wrap;
-  padding: 9px 16px; background: var(--gold-500); color: #1b2b22;
+  padding: 9px 16px; background: var(--gold-500); color: var(--ink);
   font-size: .88rem; text-align: center; box-shadow: 0 2px 8px rgba(16,53,36,.18);
 }
 .demo-banner form{ margin: 0; }
 .demo-banner button{ background: var(--green-900); color: var(--gold-100); padding: 5px 14px; font-size: .82rem; }
-.demo-banner button:hover{ background: #000; }
+.demo-banner button:hover{ background: var(--green-700); }
 .demo-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 18px; }
 .demo-card{ display:flex; flex-direction: column; }
 .demo-card p{ color: var(--muted); font-size: .92rem; margin: 0 0 12px; }
 .demo-card ul{ margin: 0 0 16px; padding-left: 18px; color: var(--ink); font-size: .9rem; line-height: 1.7; }
 .demo-card form{ margin-top: auto; }
 .demo-note{ color: var(--muted); font-size: .85rem; margin-top: 18px; }
+
+
+/* =====================================================================
+   Printing (Ctrl+P, or the browser's Print) — every printed page starts with
+   the school logo and name (.print-header, see base.html). On screen it is
+   hidden. The PDF downloads are built separately in Python (see theme.py).
+   ===================================================================== */
+.print-header{ display: none; }
+
+@page{ size: A4; margin: 12mm 12mm 14mm; }
+@page wide{ size: A4 landscape; margin: 10mm 10mm 12mm; }   /* merit lists, marks sheets, timetables */
+body.print-wide .shell{ page: wide; }
+
+@media print{
+  *{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }   /* otherwise browsers drop every background colour */
+  html, body{ background: #fff !important; color: #000; font-size: 11pt; }
+  .shell{ max-width: none; padding: 0; margin: 0; }
+
+  /* Things that only make sense on a screen */
+  .topbar, .subnav, .head-actions, .flash-wrap, .demo-banner, .att-bar, .menu,
+  .inline-actions, .setup-rail, .crumb, .no-print, button, .btn{ display: none !important; }
+
+  /* Logo header: logo (or the brand mark), school name, tagline, print date */
+  .print-header{
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 0 8px; margin: 0 0 14px;
+    border-bottom: 2px solid var(--green-900);
+    break-after: avoid;
+  }
+  .print-header img{ height: 18mm; width: auto; max-width: 50mm; object-fit: contain; display: block; }
+  .print-header .ph-mark{
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16mm; height: 16mm; border-radius: 3mm;
+    background: var(--green-900); color: var(--gold-100);
+    font: 700 16pt Georgia, serif;
+  }
+  .print-header strong{ display: block; font: 700 16pt Georgia, "Times New Roman", serif; color: var(--green-900); }
+  .print-header .ph-tag{ display: block; font-size: 9pt; color: var(--muted); }
+  .print-header .ph-date{ margin-left: auto; text-align: right; font-size: 9pt; color: var(--muted); }
+
+  /* Flatten the "app" look */
+  .card, .stat, .module-card{ box-shadow: none; border: 1px solid var(--line); }
+  .stat, .module-card{ break-inside: avoid; }          /* small tiles stay whole; big cards (tables) may span pages */
+  a{ color: inherit; text-decoration: none; }
+  h1, h2, h3{ break-after: avoid; }
+
+  /* Tables: repeat the header on each page, never split a row, show everything */
+  table{ font-size: 9.5pt; }
+  thead{ display: table-header-group; }
+  tr, .tt-cell{ break-inside: avoid; }
+  .table-scroll, .marks-scroll, div[style*="overflow-x"]{ overflow: visible !important; max-height: none !important; border: 0; }
+  .sticky-col, table.marks-table thead th{ position: static; }
+  input, select, textarea{ border: none !important; background: transparent !important; padding: 0 !important; appearance: none; }
+  .bar, .meter{ border: 1px solid var(--line); }
+
+  /* Wide result tables (many subject columns): tighten so they fit the page width */
+  table.merit-table, table.marks-table{ min-width: 0; width: 100%; font-size: 8.5pt; }
+  table.merit-table th, table.merit-table td, table.marks-table th, table.marks-table td{ white-space: normal; padding: 3px 4px; }
+  .cell, .chip{ min-width: 0; padding: 0 3px; }
+  .adm{ display: none; }
+}

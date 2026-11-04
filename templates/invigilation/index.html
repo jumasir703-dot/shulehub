@@ -55,6 +55,7 @@
           onsubmit="return confirm('Clear all assignments?')"><button class="btn" type="submit">Clear</button></form>
     <a class="btn" href="{{ url_for('invigilation.export_pdf', view=view) }}">PDF</a>
     <a class="btn" href="{{ url_for('invigilation.export_csv', view=view) }}">CSV</a>
+    <a class="btn" href="{{ url_for('invigilation.export_csv', view=view, fmt='xlsx') }}">Excel</a>
   </div>
 
   {% if short_total %}<p class="alert error">{{ short_total }} invigilator slot(s) still unfilled.</p>{% endif %}

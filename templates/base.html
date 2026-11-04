@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="{{ school.name }}">
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
 {% if demo_mode %}
 <div class="demo-banner" role="status">
   <span><strong>Example mode.</strong> You're looking at sample data for a pretend school. Nothing here is real, and nothing you do affects your own school's records.</span>
@@ -27,6 +27,15 @@
 </div>
 {% endif %}
 <div class="shell">
+  {# Appears only when the page is printed (Ctrl+P): the school logo, name and date at the top of every printout. #}
+  <div class="print-header" aria-hidden="true">
+    {% if school.has_logo %}<img src="{{ url_for('logo_image', v=school.logo_version) }}" alt="">{% else %}<span class="ph-mark">{{ school.brand_mark }}</span>{% endif %}
+    <div>
+      <strong>{{ school.name }}</strong>
+      {% if school.tagline %}<span class="ph-tag">{{ school.tagline }}</span>{% endif %}
+    </div>
+    <div class="ph-date" id="ph-date"></div>
+  </div>
   <header class="topbar">
     <div class="brand">
       {% if school.has_logo %}<img class="brand-logo" src="{{ url_for('logo_image', v=school.logo_version) }}" alt="{{ school.name }} logo">{% else %}<span class="brand-mark">{{ school.brand_mark }}</span>{% endif %}
@@ -66,6 +75,8 @@
         {% endif %}
         {% if can('timetable_view') %}
         <a href="{{ url_for('view_page') }}" class="{{ 'active' if ep=='view_page' else '' }}">View / Export</a>
+        <a href="{{ url_for('remedial.view_page') }}" class="{{ 'active' if ep.startswith('remedial.') else '' }}">Remedial Timetable</a>
+        <a href="{{ url_for('master.index') }}" class="{{ 'active' if ep.startswith('master.') else '' }}">Master Timetable</a>
         {% endif %}
         {% if can('timetable_edit') %}
         <a href="{{ url_for('rules_page') }}" class="{{ 'active' if ep=='rules_page' else '' }}">Scheduling Rules</a>
@@ -93,7 +104,7 @@
         {% endif %}
         {% endif %}
 
-        {% if can('students_view') or can('students_manage') or can('attendance') or can('fees') or role == 'admin' %}
+        {% if can('students_view') or can('students_manage') or can('attendance') or can('fees') or can('library') or can('messaging') or role == 'admin' %}
         <div class="menu-sep">School Management</div>
         {% if can('students_view') %}
         <a href="{{ url_for('school.students') }}" class="{{ 'active' if ep.startswith('school.') and ep != 'school.promote' else '' }}">Students &amp; Guardians</a>
@@ -108,6 +119,12 @@
         {% endif %}
         {% if can('fees') %}
         <a href="{{ url_for('fees.index') }}" class="{{ 'active' if ep.startswith('fees.') else '' }}">Fees &amp; Payments</a>
+        {% endif %}
+        {% if 'library' in loaded_modules and can('library') %}
+        <a href="{{ url_for('library.index') }}" class="{{ 'active' if ep.startswith('library.') else '' }}">Library</a>
+        {% endif %}
+        {% if 'msg' in loaded_modules and can('messaging') %}
+        <a href="{{ url_for('msg.index') }}" class="{{ 'active' if ep.startswith('msg.') else '' }}">Messages</a>
         {% endif %}
         {% if role == 'admin' %}
         <a href="{{ url_for('auth.staff') }}" class="{{ 'active' if ep == 'auth.staff' else '' }}">Staff &amp; Logins</a>
@@ -138,6 +155,17 @@
     {% block content %}{% endblock %}
   </main>
 </div>
+<script>
+  // Stamp the print header with the date the page is printed.
+  (function(){
+    function stamp(){
+      var el = document.getElementById('ph-date');
+      if (el) el.textContent = 'Printed ' + new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+    }
+    stamp();
+    window.addEventListener('beforeprint', stamp);
+  })();
+</script>
 <script>
   // The PWA service worker is only useful for the web-hosted version — it
   // caches pages and falls back to /offline when a real network fetch()

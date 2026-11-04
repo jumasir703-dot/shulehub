@@ -1,0 +1,57 @@
+{# Shared pieces for the library pages. Import with:  {% from "library/_macros.html" import loan_table, pager with context %} #}
+
+{% macro pager(page, pages, qs) %}
+  {% if pages > 1 %}
+  <div class="lib-pager no-print">
+    {% if page > 1 %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **qs(page=page - 1)) }}">‹ Previous</a>{% endif %}
+    <span>Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="btn secondary small" href="{{ url_for(request.endpoint, **qs(page=page + 1)) }}">Next ›</a>{% endif %}
+  </div>
+  {% endif %}
+{% endmacro %}
+
+{# rows are loan dicts from library._decorate(). actions: show Return / Renew buttons on open loans. #}
+{% macro loan_table(rows, actions=False, show_borrower=True, show_book=True, next_url='') %}
+<div class="table-scroll"><table>
+  <thead><tr>
+    {% if show_book %}<th>Book</th>{% endif %}
+    {% if show_borrower %}<th>Borrower</th>{% endif %}
+    <th>Issued</th><th>Due</th><th>Returned</th><th class="money">Fine (KES)</th>{% if actions %}<th></th>{% endif %}
+  </tr></thead>
+  <tbody>
+  {% for l in rows %}
+    <tr>
+      {% if show_book %}<td class="lib-wrap"><a href="{{ url_for('library.book_detail', book_id=l.book_id) }}">{{ l.title }}</a><br><span class="lib-quiet">{{ l.accession_no }}</span></td>{% endif %}
+      {% if show_borrower %}<td>
+        {% if l.student_id %}<a href="{{ url_for('library.borrower', kind='s', borrower_id=l.student_id) }}">{{ l.who }}</a>
+        {% elif l.teacher_id %}<a href="{{ url_for('library.borrower', kind='t', borrower_id=l.teacher_id) }}">{{ l.who }}</a>
+        {% else %}{{ l.who }}{% endif %}
+        <br><span class="lib-quiet">{{ l.ref }}{% if l.ref and l.class_name %} · {% endif %}{{ l.class_name }}</span></td>{% endif %}
+      <td>{{ l.issued_on|libdate }}</td>
+      <td>{{ l.due_on|libdate }}{% if l.is_overdue %}<br><span class="badge bad">{{ l.days_late }} day{{ '' if l.days_late == 1 else 's' }} late</span>{% endif %}</td>
+      <td>
+        {% if l.is_open %}<span class="badge {{ 'bad' if l.is_overdue else 'warn' }}">on loan</span>
+        {% else %}{{ l.returned_on|libdate }}{% if l.outcome == 'lost' %} <span class="badge bad">lost</span>{% elif l.outcome == 'damaged' %} <span class="badge warn">damaged</span>{% endif %}{% endif %}
+      </td>
+      <td class="money">
+        {% if l.is_open %}{% if l.fine_now %}<span class="owes">{{ l.fine_now|libmoney }}</span><br><span class="lib-quiet">so far</span>{% else %}—{% endif %}
+        {% elif l.fine_amount %}{{ l.fine_amount|libmoney }}<br>
+          <span class="badge {{ 'ok' if l.fine_status == 'paid' else 'off' if l.fine_status == 'waived' else 'bad' }}">{{ l.fine_status }}</span>
+        {% else %}—{% endif %}
+      </td>
+      {% if actions %}<td>
+        {% if l.is_open %}
+        <form class="lib-inline" method="post" action="{{ url_for('library.return_book') }}">
+          <input type="hidden" name="accession" value="{{ l.accession_no }}"><input type="hidden" name="next" value="{{ next_url }}">
+          <button type="submit" class="small">Return</button></form>
+        <form class="lib-inline" method="post" action="{{ url_for('library.renew', loan_id=l.id) }}">
+          <input type="hidden" name="next" value="{{ next_url }}">
+          <button type="submit" class="small secondary" {{ 'disabled' if l.is_overdue or l.renewals >= s.max_renewals }}>Renew</button></form>
+        {% endif %}
+      </td>{% endif %}
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="section-note">Nothing to show.</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endmacro %}

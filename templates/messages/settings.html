@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Message settings{% endblock %}
+{% block content %}
+<style>
+  .ms-sec{ margin-top:6px; }
+  .ms-sec[hidden]{ display:none; }
+  .ms-hint{ font-size:.82rem; color:var(--muted); margin:4px 0 0; }
+  .ms-pill{ display:inline-block; font-size:.74rem; font-weight:600; padding:2px 9px; border-radius:99px; background:var(--gold-100); color:var(--green-900); }
+  .ms-pill.bad{ background:var(--danger-bg); color:var(--danger); }
+  .ms-pill.good{ background:#dcebdd; color:var(--green-900); }
+  .ms-test{ display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .ms-test form{ margin:0; display:flex; gap:8px; align-items:end; flex-wrap:wrap; }
+  textarea.mono{ font-family:ui-monospace, Consolas, monospace; font-size:.82rem; width:100%; min-height:80px; }
+</style>
+<h1>Message settings</h1>
+<p class="section-note"><a href="{{ url_for('msg.index') }}">← Messages</a> · Only the administrator sees this page. Keys and passwords are stored, never shown again.</p>
+
+{# ---------------------------------------------------------------- SMS #}
+<div class="card" id="sms">
+  <h3 style="margin-top:0;">Text messages (SMS)
+    {% if status.sms.test %}<span class="ms-pill">Test mode: nothing is sent</span>{% elif status.sms.ok %}<span class="ms-pill good">Ready: {{ status.sms.label }}</span>{% else %}<span class="ms-pill bad">Not ready: {{ status.sms.problem }}</span>{% endif %}</h3>
+  <form method="post" action="{{ url_for('msg.settings_save') }}">
+    <input type="hidden" name="section" value="sms">
+    <label>Provider</label>
+    <select name="sms_provider" id="sms-provider" style="max-width:320px;">
+      {% for key, label in sms_providers %}<option value="{{ key }}" {{ 'selected' if cfg.sms_provider == key }}>{{ label }}</option>{% endfor %}
+    </select>
+    <p class="ms-hint">Stay on <strong>Test mode</strong> until you have tried everything. Then pick your provider and fill in its details.</p>
+
+    <div class="ms-sec" data-for="africastalking">
+      <div class="form-row">
+        <div><label>Africa's Talking username</label><input type="text" name="at_username" value="{{ cfg.at_username }}" autocomplete="off"></div>
+        <div><label>API key {% if saved.at_api_key %}<span class="ms-pill good">saved</span>{% endif %}</label>
+          <input type="password" name="at_api_key" placeholder="{{ 'Leave empty to keep the saved key' if saved.at_api_key else '' }}" autocomplete="new-password">
+          {% if saved.at_api_key %}<label style="font-weight:400;"><input type="checkbox" name="clear_at_api_key" value="1"> Remove the saved key</label>{% endif %}</div>
+        <div><label>Sender ID (optional)</label><input type="text" name="at_sender_id" value="{{ cfg.at_sender_id }}" placeholder="e.g. SCHOOLNAME"></div>
+      </div>
+      <label style="font-weight:400;"><input type="checkbox" name="at_sandbox" value="1" {{ 'checked' if cfg.at_sandbox == '1' }}> Use the free <strong>sandbox</strong> for practice (the username must be <code>sandbox</code>)</label>
+    </div>
+
+    <div class="ms-sec" data-for="generic">
+      <div class="form-row">
+        <div style="flex:2;"><label>Gateway web address</label><input type="text" name="generic_url" value="{{ cfg.generic_url }}" placeholder="https://sms.example.com/send"></div>
+        <div><label>Method</label><select name="generic_method"><option value="POST" {{ 'selected' if cfg.generic_method != 'GET' }}>POST</option><option value="GET" {{ 'selected' if cfg.generic_method == 'GET' }}>GET</option></select></div>
+        <div><label>Body type</label><select name="generic_content"><option value="form" {{ 'selected' if cfg.generic_content != 'json' }}>Form</option><option value="json" {{ 'selected' if cfg.generic_content == 'json' }}>JSON</option></select></div>
+      </div>
+      <label>Body (one <code>name=value</code> per line, or JSON). Leave empty for <code>to</code> and <code>message</code></label>
+      <textarea class="mono" name="generic_body">{{ cfg.generic_body }}</textarea>
+      <label style="margin-top:8px;">Headers (one per line, e.g. <code>Authorization: Bearer {api_key}</code>)</label>
+      <textarea class="mono" name="generic_headers">{{ cfg.generic_headers }}</textarea>
+      <div class="form-row">
+        <div><label>Sender</label><input type="text" name="generic_sender" value="{{ cfg.generic_sender }}"></div>
+        <div><label>Username</label><input type="text" name="generic_username" value="{{ cfg.generic_username }}"></div>
+        <div><label>API key {% if saved.generic_api_key %}<span class="ms-pill good">saved</span>{% endif %}</label>
+          <input type="password" name="generic_api_key" placeholder="{{ 'Leave empty to keep' if saved.generic_api_key else '' }}" autocomplete="new-password">
+          {% if saved.generic_api_key %}<label style="font-weight:400;"><input type="checkbox" name="clear_generic_api_key" value="1"> Remove</label>{% endif %}</div>
+        <div><label>Success text (optional)</label><input type="text" name="generic_ok_text" value="{{ cfg.generic_ok_text }}" placeholder="e.g. OK"></div>
+      </div>
+      <p class="ms-hint">You can use <code>{to}</code> <code>{to_plain}</code> <code>{message}</code> <code>{sender}</code> <code>{api_key}</code> <code>{username}</code> in the address, body and headers. If you enter success text, the gateway's reply must contain it, otherwise any 2xx reply counts as sent.</p>
+    </div>
+    <button type="submit" style="margin-top:14px;">Save text message settings</button>
+  </form>
+  <div class="ms-test">
+    <form method="post" action="{{ url_for('msg.test_sms') }}">
+      <div><label>Send a test text to</label><input type="text" name="to" placeholder="0712 345 678"></div>
+      <button type="submit" class="secondary">Send test text</button>
+    </form>
+    <span class="ms-hint">Save first, then test.</span>
+  </div>
+</div>
+
+{# ---------------------------------------------------------------- Email #}
+<div class="card" id="email">
+  <h3 style="margin-top:0;">Email
+    {% if status.email.test %}<span class="ms-pill">Test mode: nothing is sent</span>{% elif status.email.ok %}<span class="ms-pill good">Ready: {{ status.email.label }}</span>{% else %}<span class="ms-pill bad">Not ready: {{ status.email.problem }}</span>{% endif %}</h3>
+  <form method="post" action="{{ url_for('msg.settings_save') }}">
+    <input type="hidden" name="section" value="email">
+    <label>Provider</label>
+    <select name="email_provider" id="email-provider" style="max-width:320px;">
+      {% for key, label in email_providers %}<option value="{{ key }}" {{ 'selected' if cfg.email_provider == key }}>{{ label }}</option>{% endfor %}
+    </select>
+
+    <div class="form-row">
+      <div><label>From name</label><input type="text" name="email_from_name" value="{{ cfg.email_from_name }}" placeholder="Your school's name"></div>
+      <div><label>From email address</label><input type="email" name="email_from_address" value="{{ cfg.email_from_address }}"></div>
+      <div><label>Replies go to (optional)</label><input type="email" name="email_reply_to" value="{{ cfg.email_reply_to }}"></div>
+    </div>
+
+    <div class="ms-sec" data-for="smtp">
+      <div class="form-row">
+        <div style="flex:2;"><label>Mail server</label><input type="text" name="smtp_host" value="{{ cfg.smtp_host }}" placeholder="smtp.gmail.com"></div>
+        <div><label>Port</label><input type="number" name="smtp_port" value="{{ cfg.smtp_port }}"></div>
+        <div><label>Security</label><select name="smtp_security">
+          <option value="starttls" {{ 'selected' if cfg.smtp_security == 'starttls' }}>STARTTLS (port 587)</option>
+          <option value="ssl" {{ 'selected' if cfg.smtp_security == 'ssl' }}>SSL (port 465)</option>
+          <option value="none" {{ 'selected' if cfg.smtp_security == 'none' }}>None</option></select></div>
+      </div>
+      <div class="form-row">
+        <div><label>Username</label><input type="text" name="smtp_user" value="{{ cfg.smtp_user }}" autocomplete="off"></div>
+        <div><label>Password {% if saved.smtp_password %}<span class="ms-pill good">saved</span>{% endif %}</label>
+          <input type="password" name="smtp_password" placeholder="{{ 'Leave empty to keep the saved password' if saved.smtp_password else '' }}" autocomplete="new-password">
+          {% if saved.smtp_password %}<label style="font-weight:400;"><input type="checkbox" name="clear_smtp_password" value="1"> Remove</label>{% endif %}</div>
+      </div>
+      <p class="ms-hint">For Gmail or Outlook use an <strong>app password</strong>, not your normal one.</p>
+    </div>
+
+    <div class="ms-sec" data-for="brevo">
+      <label>Brevo API key {% if saved.brevo_api_key %}<span class="ms-pill good">saved</span>{% endif %}</label>
+      <input type="password" name="brevo_api_key" placeholder="{{ 'Leave empty to keep the saved key' if saved.brevo_api_key else '' }}" autocomplete="new-password" style="max-width:420px;">
+      {% if saved.brevo_api_key %}<label style="font-weight:400;"><input type="checkbox" name="clear_brevo_api_key" value="1"> Remove the saved key</label>{% endif %}
+      <p class="ms-hint">The "From" address must be a verified sender in your Brevo account.</p>
+    </div>
+    <button type="submit" style="margin-top:14px;">Save email settings</button>
+  </form>
+  <div class="ms-test">
+    <form method="post" action="{{ url_for('msg.test_email') }}">
+      <div><label>Send a test email to</label><input type="email" name="to" placeholder="you@example.com"></div>
+      <button type="submit" class="secondary">Send test email</button>
+    </form>
+    <span class="ms-hint">Save first, then test.</span>
+  </div>
+</div>
+
+{# ---------------------------------------------------------------- General #}
+<div class="card" id="general">
+  <h3 style="margin-top:0;">For every message</h3>
+  <form method="post" action="{{ url_for('msg.settings_save') }}">
+    <input type="hidden" name="section" value="general">
+    <div class="form-row">
+      <div><label>Country code</label><input type="text" name="country_code" value="{{ cfg.country_code }}" style="max-width:100px;"><p class="ms-hint">254 for Kenya</p></div>
+      <div><label>School phone</label><input type="text" name="office_phone" value="{{ cfg.office_phone }}"><p class="ms-hint">Goes in <code>{office_phone}</code></p></div>
+      <div><label>Cost of one text part (KES)</label><input type="number" step="0.01" min="0" name="sms_unit_cost" value="{{ cfg.sms_unit_cost }}"><p class="ms-hint">Only for the estimate shown before sending</p></div>
+    </div>
+    <label>How to pay fees</label>
+    <input type="text" name="pay_info" value="{{ cfg.pay_info }}" placeholder="Paybill 123456, Account: admission number" style="max-width:560px;">
+    <p class="ms-hint">Goes in <code>{pay_info}</code> in fee messages.</p>
+    <button type="submit" style="margin-top:12px;">Save</button>
+  </form>
+</div>
+
+<script>
+  function show(selectId, attr) {
+    var v = document.getElementById(selectId).value;
+    document.querySelectorAll('.ms-sec').forEach(function (s) {
+      if (s.closest('form') === document.getElementById(selectId).closest('form')) s.hidden = s.dataset.for !== v;
+    });
+  }
+  document.getElementById('sms-provider').addEventListener('change', function () { show('sms-provider'); });
+  document.getElementById('email-provider').addEventListener('change', function () { show('email-provider'); });
+  show('sms-provider'); show('email-provider');
+</script>
+{% endblock %}

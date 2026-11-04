@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}New message{% endblock %}
+{% block content %}
+<style>
+  .ms-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .ms-chip{ font-size:.78rem; padding:3px 9px; border:1px solid var(--line); border-radius:99px; background:var(--paper); cursor:pointer; color:var(--ink); }
+  .ms-chip:hover{ border-color:var(--green-900); }
+  .ms-box textarea{ width:100%; min-height:110px; }
+  .ms-count{ font-size:.8rem; color:var(--muted); margin-top:4px; }
+  .ms-inline{ display:flex; gap:18px; flex-wrap:wrap; margin-top:6px; }
+  .ms-inline label{ display:inline-flex; gap:6px; align-items:center; font-size:.9rem; color:var(--ink); margin:0; }
+  .ms-warn{ border-left:4px solid var(--gold-500); }
+</style>
+<h1>{{ kind_label }}</h1>
+<p class="section-note"><a href="{{ url_for('msg.index') }}">← Messages</a></p>
+
+{% for ch, name in (('sms','Text messages'), ('email','Email')) %}{% if not status[ch].ok %}
+<div class="card ms-warn"><strong>{{ name }} are not set up.</strong> {{ status[ch].problem|capitalize }}. Ask the administrator to finish Messages &gt; Settings, or untick {{ name|lower }} below.</div>
+{% endif %}{% endfor %}
+
+<form method="post" class="card" id="msg-form">
+  <h3 style="margin-top:0;">1. Who gets it</h3>
+
+  {% if kind == 'results' %}
+  <label>Exam</label>
+  <select name="exam_id" required>
+    <option value="">Choose an exam…</option>
+    {% for e in exams %}
+    <option value="{{ e.id }}" {{ 'selected' if form.get('exam_id')|string == e.id|string }}>{{ e.name }} · {{ e.grade_name }} · Term {{ e.term }} {{ e.year }}{{ '' if e.published else ' (not published yet)' }}</option>
+    {% endfor %}
+  </select>
+  <p class="section-note">Only published results can be sent, so parents never see unfinished marks.</p>
+  {% elif kind == 'fees' %}
+  <label>Only families owing at least (KES)</label>
+  <input type="number" name="min_amount" min="0" step="1" value="{{ form.get('min_amount') or 0 }}" style="max-width:180px;">
+  <p class="section-note">Leave at 0 to include everyone who owes anything.</p>
+  {% elif kind == 'meeting' %}
+  <div class="form-row">
+    <div><label>Date</label><input type="date" name="meeting_date" value="{{ form.get('meeting_date') or '' }}" min="{{ today }}" required></div>
+    <div><label>Time</label><input type="time" name="meeting_time" value="{{ form.get('meeting_time') or '' }}"></div>
+    <div><label>Venue</label><input type="text" name="venue" value="{{ form.get('venue') or '' }}" required></div>
+  </div>
+  <label>Agenda (optional)</label>
+  <input type="text" name="agenda" value="{{ form.get('agenda') or '' }}">
+  {% endif %}
+
+  <label style="margin-top:12px;">Send to</label>
+  <div class="ms-inline">
+    <label><input type="radio" name="scope" value="all" {{ 'checked' if form.get('scope','all') == 'all' }}> {{ 'The whole exam' if kind == 'results' else 'Everyone' }}</label>
+    {% if kind != 'results' %}<label><input type="radio" name="scope" value="grade" {{ 'checked' if form.get('scope') == 'grade' }}> One grade</label>{% endif %}
+    <label><input type="radio" name="scope" value="stream" {{ 'checked' if form.get('scope') == 'stream' }}> One class</label>
+  </div>
+  <div class="form-row">
+    <div id="grade-box"><label>Grade</label>
+      <select name="grade_id" id="grade-select">
+        <option value="">—</option>
+        {% for g in grades %}<option value="{{ g.id }}" {{ 'selected' if form.get('grade_id')|string == g.id|string }}>{{ g.name }}</option>{% endfor %}
+      </select></div>
+    <div id="stream-box"><label>Class</label>
+      <select name="stream_id" id="stream-select">
+        <option value="">—</option>
+        {% for s in streams %}<option value="{{ s.id }}" data-grade="{{ s.grade_id }}" {{ 'selected' if form.get('stream_id')|string == s.id|string }}>{{ s.name }}</option>{% endfor %}
+      </select></div>
+  </div>
+
+  <label style="margin-top:12px;">Which guardians</label>
+  <div class="ms-inline">
+    <label><input type="radio" name="who" value="primary" {{ 'checked' if form.get('who','primary') != 'all' }}> The main guardian only</label>
+    <label><input type="radio" name="who" value="all" {{ 'checked' if form.get('who') == 'all' }}> Every guardian with a contact</label>
+  </div>
+
+  <h3>2. How</h3>
+  <div class="ms-inline">
+    <label><input type="checkbox" name="sms" value="1" id="use-sms" {{ 'checked' if form.get('sms') }}> Text message (SMS)</label>
+    <label><input type="checkbox" name="email" value="1" id="use-email" {{ 'checked' if form.get('email') }}> Email</label>
+  </div>
+
+  <h3>3. The wording</h3>
+  {% if templates|length > 1 %}
+  <label>Start from a saved wording</label>
+  <select id="tpl-select" name="tpl" style="max-width:320px;">
+    {% for t in templates %}<option value="{{ t.id }}" {{ 'selected' if form.get('tpl')|string == t.id|string }}>{{ t.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+
+  <div class="ms-box" id="sms-box" style="margin-top:12px;">
+    <label>Text message</label>
+    <textarea name="sms_body" id="sms-body" data-field>{{ form.get('sms_body') or '' }}</textarea>
+    <div class="ms-count" id="sms-count"></div>
+  </div>
+  <div class="ms-box" id="email-box" style="margin-top:12px;">
+    <label>Email subject</label>
+    <input type="text" name="email_subject" id="email-subject" data-field value="{{ form.get('email_subject') or '' }}">
+    <label style="margin-top:8px;">Email message</label>
+    <textarea name="email_body" id="email-body" data-field style="min-height:200px;">{{ form.get('email_body') or '' }}</textarea>
+  </div>
+
+  <p class="section-note" style="margin-bottom:2px;">Click a word to put it into the box you last clicked in. Each is replaced with the real details for each child:</p>
+  <div class="ms-chips">
+    {% for v in vars %}<button type="button" class="ms-chip" data-var="{{ v }}" title="{{ var_help.get(v, '') }}">{{ '{' ~ v ~ '}' }}</button>{% endfor %}
+  </div>
+
+  <button type="submit" style="margin-top:18px;">Preview before sending</button>
+  <span class="section-note" style="margin-left:10px;">Nothing is sent yet.</span>
+</form>
+
+<script>
+  var TPL = {{ tpl_json|safe }};
+  var form = document.getElementById('msg-form');
+  var last = document.getElementById('sms-body');
+  form.querySelectorAll('[data-field]').forEach(function (el) { el.addEventListener('focus', function () { last = el; }); });
+  form.querySelectorAll('.ms-chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = '{' + b.dataset.var + '}', s = last.selectionStart || 0, e = last.selectionEnd || 0;
+      last.value = last.value.slice(0, s) + t + last.value.slice(e);
+      last.focus(); last.selectionStart = last.selectionEnd = s + t.length; count();
+    });
+  });
+  var sel = document.getElementById('tpl-select');
+  if (sel) sel.addEventListener('change', function () {
+    var t = TPL[sel.value]; if (!t) return;
+    if (!confirm('Replace the wording below with this saved wording?')) return;
+    document.getElementById('sms-body').value = t.sms;
+    document.getElementById('email-subject').value = t.subject;
+    document.getElementById('email-body').value = t.body; count();
+  });
+  function count() {
+    var v = document.getElementById('sms-body').value, gsm = /^[\x20-\x7E\n\r£¥èéùìòÇØøÅåÄÖÑÜäöñüà€§¿¡]*$/.test(v);
+    var single = gsm ? 160 : 70, multi = gsm ? 153 : 67, n = v.length;
+    var parts = n === 0 ? 0 : n <= single ? 1 : Math.ceil(n / multi);
+    document.getElementById('sms-count').textContent = n + ' characters (about ' + parts + ' text part' + (parts === 1 ? '' : 's') +
+      '; the real count is worked out once the names are filled in). Keep it short: each part is charged separately.';
+  }
+  function toggles() {
+    document.getElementById('sms-box').style.display = document.getElementById('use-sms').checked ? '' : 'none';
+    document.getElementById('email-box').style.display = document.getElementById('use-email').checked ? '' : 'none';
+  }
+  function scope() {
+    var v = (form.querySelector('input[name=scope]:checked') || {}).value;
+    document.getElementById('grade-box').style.display = v === 'grade' ? '' : 'none';
+    document.getElementById('stream-box').style.display = v === 'stream' ? '' : 'none';
+    var g = document.getElementById('grade-select').value;
+    Array.prototype.forEach.call(document.getElementById('stream-select').options, function (o) {
+      if (o.dataset.grade) o.hidden = !!(g && o.dataset.grade !== g);
+    });
+  }
+  document.getElementById('sms-body').addEventListener('input', count);
+  document.getElementById('use-sms').addEventListener('change', toggles);
+  document.getElementById('use-email').addEventListener('change', toggles);
+  form.querySelectorAll('input[name=scope]').forEach(function (r) { r.addEventListener('change', scope); });
+  document.getElementById('grade-select').addEventListener('change', scope);
+  count(); toggles(); scope();
+</script>
+{% endblock %}
