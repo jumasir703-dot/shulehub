@@ -19,6 +19,7 @@
 </div>
 
 {% if cls %}
+{% include "charts/_attendance_trend.html" %}
 <div class="card">
   <h3>{{ cls.label }}</h3>
   <p class="section-note">{{ start }} to {{ end }} · {{ marked_days }} day(s) with attendance recorded · students under {{ low|int }}% are highlighted</p>

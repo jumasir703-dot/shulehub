@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}People{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('schools.index') }}">← Our schools</a>
+<h1>People in {{ name }}</h1>
+<p class="section-note">Tick who can work in this school. Staff accounts are shared by the whole group, so one person can be in several schools with the same password.
+  A teacher&rsquo;s profile is chosen per school, because each school has its own list of teachers.</p>
+<form method="post" class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Person</th><th>Role</th><th>Works in this school</th><th>Teacher profile here</th><th>Runs the whole group</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr class="{{ '' if u.active else 'sch-dim' }}">
+        <td><strong>{{ u.full_name }}</strong><br><span class="section-note">{{ u.username }}{% if not u.active %} · switched off{% endif %}</span></td>
+        <td>{{ ROLES.get(u.role, u.role) }}</td>
+        <td><input type="checkbox" name="access" value="{{ u.id }}" {{ 'checked' if u.access }} style="width:auto;" aria-label="{{ u.full_name }} works in this school"></td>
+        <td><select name="teacher_{{ u.id }}"><option value="">None</option>
+          {% for t in teachers %}<option value="{{ t.id }}" {{ 'selected' if u.teacher_id == t.id }}>{{ t.name }}</option>{% endfor %}</select></td>
+        <td>{% if u.role == 'admin' %}<input type="checkbox" name="group_admin" value="{{ u.id }}" {{ 'checked' if u.group_admin }} style="width:auto;" aria-label="{{ u.full_name }} runs the whole group">{% else %}<span class="section-note">Administrators only</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">Group administrators can open every school, add schools and manage this page.</p>
+  <button type="submit" style="margin-top:12px;">Save</button>
+</form>
+<style>.sch-dim{ opacity:.6; }</style>
+{% endblock %}

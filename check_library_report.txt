@@ -1,0 +1,30 @@
+ShuleHub library check
+Folder: C:\Users\USER\Desktop\SHULEHUB\ShuleHub
+
+1. Files
+   OK  library.py found
+   OK  all 12 library pages (templates\library) are there
+
+2. Can library.py be loaded?
+   OK  analytics.py
+   OK  import_files.py
+   OK  branding.py
+   OK  auth.py
+   OK  library.py loads without errors
+
+3. Permissions
+   OK  'library' service exists
+   OK  library pages are tied to the library service
+   COMMON (open to every signed-in person) contains: auth.account, auth.account_password, auth.logout, demo.exit_demo, demo.index, demo.start, home
+   ..  library.catalogue is not in auth.COMMON, so only people with the Library service can search the catalogue
+   ..  library.book_detail is not in auth.COMMON, so only people with the Library service can search the catalogue
+   ..  search.index is not in auth.COMMON, so the search page is administrator-only for now
+   ..  search.suggest is not in auth.COMMON, so the search page is administrator-only for now
+
+4. app.py lines that mention the library or loaded_modules
+   line 85: # Library and Messages are loaded defensively: if one of them can't start (a missing
+   line 88: for _module, _blueprint in (("library", "library_bp"), ("messaging", "msg_bp")):
+   line 119: "loaded_modules": set(app.blueprints),      # lets the menu show only sections that started
+
+RESULT: everything looks fine here. Close ShuleHub completely and open it again.
+Report saved as check_library_report.txt. Send it to Claude if you want help.

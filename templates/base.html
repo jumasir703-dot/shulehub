@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Timetable{% endblock %} · {{ school.name }} · ShuleHub</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% if school_theme is defined and school_theme %}<link rel="stylesheet" href="{{ url_for('themes.css', v=school_theme.version) }}">{% endif %}
 
 <!-- PWA: installable "app" support -->
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-<meta name="theme-color" content="#103524">
+<meta name="theme-color" content="{{ school_theme.color if school_theme is defined and school_theme else '#103524' }}">
 {% if user %}<meta name="csrf-token" content="{{ csrf_token() }}">{% endif %}
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/icon-192.png') }}">
@@ -16,6 +17,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="{{ school.name }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
+<script src="{{ url_for('static', filename='js/search.js') }}" defer></script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% if demo_mode %}
@@ -44,6 +47,8 @@
         <span>{{ school.tagline }}</span>
       </div>
     </div>
+    {% if pager_on and user %}{% include "pager/_bell.html" %}{% endif %}
+    {% if user and school_choices and school_choices|length > 1 %}{% include "schools/_switcher.html" %}{% endif %}
     <nav class="menu">
       <button type="button" class="menu-toggle" id="menu-toggle" aria-haspopup="true" aria-expanded="false">
         <span>Menu</span>
@@ -53,6 +58,9 @@
         {% set ep = request.endpoint or '' %}
         {% set role = user.role if user else '' %}
         <a href="{{ url_for('home') }}" class="{{ 'active' if ep=='home' else '' }}">Home</a>
+        {% if 'dashboard' in loaded_modules %}
+        <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep.startswith('dashboard.') else '' }}">Dashboard</a>
+        {% endif %}
         <a href="{{ url_for('guide_page') }}" class="{{ 'active' if ep=='guide_page' else '' }}">Quick-Start Guide</a>
         {% if not desktop_mode %}<a href="{{ url_for('get_app_page') }}" class="{{ 'active' if ep=='get_app_page' else '' }}">Install / Download App</a>{% endif %}
         {% if user and demo_available %}
@@ -61,6 +69,10 @@
         {% if role == 'admin' %}
         <a href="{{ url_for('onboarding.welcome') }}" class="{{ 'active' if ep.startswith('onboarding.') else '' }}">Setup Wizard</a>
         <a href="{{ url_for('settings_page') }}" class="{{ 'active' if ep=='settings_page' else '' }}">School Settings</a>
+        {% if group_admin %}<a href="{{ url_for('schools.index') }}" class="{{ 'active' if ep.startswith('schools.') else '' }}">Our Schools</a>{% endif %}
+        {% if 'themes' in loaded_modules %}
+        <a href="{{ url_for('themes.index') }}" class="{{ 'active' if ep.startswith('themes.') else '' }}">Theme &amp; Colours</a>
+        {% endif %}
         {% endif %}
 
         {% if can('timetable_edit') or can('timetable_view') %}
@@ -126,12 +138,23 @@
         {% if 'msg' in loaded_modules and can('messaging') %}
         <a href="{{ url_for('msg.index') }}" class="{{ 'active' if ep.startswith('msg.') else '' }}">Messages</a>
         {% endif %}
+        {% if 'attexport' in loaded_modules and can('attendance') %}
+        <a href="{{ url_for('attexport.index') }}" class="{{ 'active' if ep.startswith('attexport.') else '' }}">Download Attendance</a>
+        {% endif %}
+        {% if 'clearance' in loaded_modules and can('clearance') %}
+        <a href="{{ url_for('clearance.index') }}" class="{{ 'active' if ep.startswith('clearance.') else '' }}">Clearance</a>
+        {% endif %}
         {% if role == 'admin' %}
         <a href="{{ url_for('auth.staff') }}" class="{{ 'active' if ep == 'auth.staff' else '' }}">Staff &amp; Logins</a>
         <a href="{{ url_for('auth.roles_page') }}" class="{{ 'active' if ep.startswith('auth.role') else '' }}">Roles &amp; Access</a>
         {% endif %}
         {% endif %}
 
+        {% if 'lp' in loaded_modules and (can('lesson_plans') or can('lesson_plans_mark')) %}
+        <div class="menu-sep">Academics</div>
+        <a href="{{ url_for('lp.index') }}" class="{{ 'active' if ep.startswith('lp.') else '' }}">Lesson Plans</a>
+        {% endif %}
+        {% if pager_on and user %}{% include "pager/_menu.html" %}{% endif %}
         {% if user %}
         <div class="menu-sep">{{ user.full_name }} · {{ ROLES[user.role] }}</div>
         <a href="{{ url_for('auth.account') }}" class="{{ 'active' if ep == 'auth.account' else '' }}">My Account</a>
@@ -214,6 +237,7 @@
     });
   })();
 </script>
+{% if pager_on and user %}{% include "pager/_poll.html" %}{% endif %}
 <script src="{{ url_for('static', filename='csrf.js') }}"></script>
 </body>
 </html>

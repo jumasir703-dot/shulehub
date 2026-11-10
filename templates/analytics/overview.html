@@ -78,6 +78,7 @@
 </div>
 
 {% if can('exams') or can('results_publish') %}
+{% include "charts/_exam_overview.html" %}
 <div class="card">
   <h3>Report forms</h3>
   <p class="section-note">One page per student, with marks, grades, subject positions, overall and stream position, and change since the previous exam.</p>

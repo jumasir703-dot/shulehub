@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Clearance{% endblock %}
+{% block content %}
+<style>
+  .cl-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  .cl-bar label{display:flex;flex-direction:column;gap:3px;font-weight:600;font-size:.85rem}
+  .cl-tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:700}
+  .cl-ok{background:#e3f6ea;color:#1f6b3b}.cl-no{background:#fde2e7;color:#a02b4a}
+  .cl-sm{font-size:.8rem;opacity:.8}
+</style>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">Clearance</h1>
+  {% if is_admin %}<a href="{{ url_for('clearance.settings') }}">Settings</a>{% endif %}
+</div>
+<p class="section-note">Fees and library are checked automatically. Other departments sign off here. Print each student's clearance form when everything is cleared.</p>
+
+<form method="get" class="card cl-bar">
+  <label>Class<select name="audience"><option value="">Whole school</option>
+    {% for v, label, grp in options %}<option value="{{ v }}" {{ 'selected' if f.audience == v }}>{{ label }}</option>{% endfor %}</select></label>
+  <label>Students<select name="status">
+    {% for v, l in [('active','Current students'),('graduated','Graduated'),('transferred','Transferred out'),('withdrawn','Withdrawn'),('all','Everyone')] %}<option value="{{ v }}" {{ 'selected' if f.status == v }}>{{ l }}</option>{% endfor %}</select></label>
+  <label>Show<select name="only"><option value="">All</option><option value="pending" {{ 'selected' if f.only == 'pending' }}>Not cleared</option><option value="cleared" {{ 'selected' if f.only == 'cleared' }}>Cleared</option></select></label>
+  <label>Search<input type="text" name="q" value="{{ f.q }}" placeholder="Name or admission no"></label>
+  <label>Purpose on the form<select name="purpose">{% for p in purposes %}<option {{ 'selected' if f.purpose == p }}>{{ p }}</option>{% endfor %}</select></label>
+  <button type="submit">Show</button>
+</form>
+
+<div class="card" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
+  <div><strong>{{ cleared }}</strong> of <strong>{{ shown }}</strong> cleared{% if f.only %} (filtered from {{ total }}){% endif %}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <a class="btn" href="{{ url_for('clearance.forms_pdf', audience=f.audience, status=f.status, only=f.only, q=f.q, purpose=f.purpose) }}">Download forms (PDF)</a>
+    <a class="btn secondary" href="{{ url_for('clearance.status_csv', audience=f.audience, status=f.status, only=f.only, q=f.q) }}">Download status (CSV)</a>
+  </div>
+</div>
+
+{% if f.audience and depts %}
+<form method="post" action="{{ url_for('clearance.bulk_sign') }}" class="card cl-bar">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="audience" value="{{ f.audience }}"><input type="hidden" name="status" value="{{ f.status }}"><input type="hidden" name="purpose" value="{{ f.purpose }}">
+  <label>Sign off for everyone in this selection<select name="dept_id">{% for d in depts %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select></label>
+  <button type="submit" onclick="return confirm('Clear everyone in this selection for that department?');">Clear department for all</button>
+</form>
+{% endif %}
+
+<div class="card">
+  {% if people %}
+  <table style="width:100%;">
+    <thead><tr><th align="left">Student</th><th align="left">Class</th><th align="left">Fees</th>{% if library_on %}<th align="left">Library</th>{% endif %}<th align="left">Departments</th><th align="left">Result</th><th></th></tr></thead>
+    <tbody>
+    {% for p in people %}
+      {% set it = p['items'] %}
+      <tr>
+        <td><a href="{{ url_for('clearance.student', student_id=p.student.id, purpose=f.purpose) }}">{{ p.student.name }}</a><br><span class="cl-sm">{{ p.student.admission_no }}</span></td>
+        <td>{{ p['class'] }}</td>
+        <td>{% if it[0].cleared %}<span class="cl-tag cl-ok">Paid</span>{% else %}<span class="cl-tag cl-no">{{ it[0].detail.replace(' unpaid','') }}</span>{% endif %}</td>
+        {% if library_on %}<td>{% if it[1].cleared %}<span class="cl-tag cl-ok">Clear</span>{% else %}<span class="cl-tag cl-no">{{ it[1].detail }}</span>{% endif %}</td>{% endif %}
+        {% set manual = it|selectattr('auto','equalto',false)|list %}
+        <td>{{ manual|selectattr('cleared')|list|length }}/{{ manual|length }} signed</td>
+        <td>{% if p.cleared %}<span class="cl-tag cl-ok">CLEARED</span>{% else %}<span class="cl-tag cl-no">NOT CLEARED</span>{% endif %}</td>
+        <td align="right"><a href="{{ url_for('clearance.form_pdf', student_id=p.student.id, purpose=f.purpose) }}">Form PDF</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if capped %}<p class="section-note">Showing the first 500. Choose a class to narrow it down.</p>{% endif %}
+  {% else %}<p class="section-note" style="margin:0;">No students match.</p>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{# The bell in the top bar. base.html includes this only when the pager is installed. #}
+<style>
+  .pager-bell{ position:relative; margin-left:auto; display:inline-flex; align-items:center; justify-content:center;
+    width:42px; height:42px; border-radius:8px; border:1px solid var(--line); background:var(--paper);
+    color:var(--green-900); text-decoration:none; }
+  .pager-bell:hover{ background:var(--gold-100); }
+  .pager-bell.has{ border-color:var(--gold-500); background:var(--gold-100); }
+  .pager-count{ position:absolute; top:-7px; right:-7px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+    background:var(--danger); color:#fff; font-size:.72rem; font-weight:700; line-height:20px; text-align:center; }
+  .pager-count[hidden]{ display:none; }
+  #pager-menu-count{ margin-left:6px; }
+  #pager-menu-count[hidden]{ display:none; }
+  #pager-toasts{ position:fixed; right:16px; bottom:16px; z-index:100; display:flex; flex-direction:column; gap:10px;
+    width:min(370px, calc(100vw - 32px)); }
+  .pager-toast{ background:var(--paper); border:1px solid var(--line); border-left:5px solid var(--gold-500);
+    border-radius:var(--radius); box-shadow:0 12px 32px rgba(16,53,36,.22); padding:12px 14px; font-size:.9rem; }
+  .pager-toast.urgent{ border-left-color:var(--danger); }
+  .pager-toast .pt-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .pager-toast .pt-kind{ font-size:.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--muted); }
+  .pager-toast.urgent .pt-kind{ color:var(--danger); }
+  .pager-toast .pt-x{ background:none; border:none; color:var(--muted); font-size:1.2rem; line-height:1; cursor:pointer; padding:0 2px; }
+  .pager-toast .pt-x:hover{ background:none; color:var(--ink); }
+  .pager-toast strong{ display:block; margin:4px 0 2px; font-size:1rem; color:var(--green-900); }
+  .pager-toast .pt-line{ color:var(--ink); margin:1px 0; }
+  .pager-toast .pt-by{ color:var(--muted); font-size:.8rem; margin-top:4px; }
+  .pager-toast .pt-actions{ display:flex; gap:8px; margin-top:10px; }
+  .pager-toast .pt-actions button, .pager-toast .pt-actions a{ padding:7px 14px; font-size:.84rem; }
+  @media print{ .pager-bell, #pager-toasts{ display:none !important; } }
+</style>
+<a class="pager-bell" id="pager-bell" href="{{ url_for('pager.inbox') }}" aria-label="Staff alerts" title="Staff alerts">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+  <span class="pager-count" id="pager-count" hidden>0</span>
+</a>

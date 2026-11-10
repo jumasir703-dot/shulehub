@@ -1,2 +1,86 @@
 Testy Timetables starting at http://127.0.0.1:5000/
 Your data is stored at: C:\Users\USER\Desktop\New folder (3)\Gtimetable-main\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+2026-11-04 22:02:48,568 ERROR Exception on /library/ [GET]
+Traceback (most recent call last):
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\USER\Desktop\SHULEHUB\ShuleHub\library.py", line 638, in index
+    s = get_settings()
+  File "C:\Users\USER\Desktop\SHULEHUB\ShuleHub\library.py", line 189, in get_settings
+    raw = {r["key"]: r["value"] for r in db.fetch_all("SELECT key, value FROM lib_settings")}
+                                         ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\USER\Desktop\SHULEHUB\ShuleHub\database.py", line 1035, in fetch_all
+    cur.execute(_adapt(query), params)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: lib_settings
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db
+2026-11-08 08:44:44,527 ERROR Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\USER\Desktop\SHULEHUB\ShuleHub\app.py", line 166, in home
+    return render_template("home.html", counts=counts, today=today)
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\environment.py", line 771, in compile
+    self.handle_exception(source=source_hint)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\USER\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\USER\Desktop\SHULEHUB\ShuleHub\templates\home.html", line 8, in template
+    {% for l in unopened %}<p>📨 <a href="{{ url_for('link_detail', lid=l.id) }}">{{ l.recipient }}</a> has <b>not opened</b> the link yet (sent {{ l.created_at|ago }}).</p>{% endfor %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.TemplateAssertionError: No filter named 'ago'.
+ShuleHub starting at http://127.0.0.1:5000/
+Your data is stored at: C:\Users\USER\Desktop\SHULEHUB\ShuleHub\timetable.db

@@ -1,0 +1,12 @@
+{% set c_streams = chart_streams(streams) %}
+{% set c_subjects = chart_subjects(subjects, res.pass_pct) %}
+{% set c_progress = chart_grade_progress(exam) %}
+{% if c_streams or c_subjects %}
+<div class="grid-even">
+  {% if c_subjects %}<div class="card"><h3>Subject means</h3>{{ c_subjects }}</div>{% endif %}
+  {% if c_streams %}<div class="card"><h3>Stream means</h3>{{ c_streams }}</div>{% endif %}
+</div>
+{% endif %}
+{% if c_progress %}
+<div class="card"><h3>{{ exam.grade_name }} progress across exams</h3>{{ c_progress }}</div>
+{% endif %}

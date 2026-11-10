@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Lesson plan{% endblock %}
+{% block content %}
+<style>
+  .lf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 16px}
+  .lf-f{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+  .lf-f label{font-weight:600;font-size:.9rem}
+  .lf-f input,.lf-f select,.lf-f textarea{width:100%}
+  .lf-f textarea{min-height:92px;resize:vertical}
+</style>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">{{ 'Edit lesson plan' if p.id else 'New lesson plan' }}</h1>
+  <a href="{{ url_for('lp.index') }}">Back to the list</a>
+</div>
+{% if p.status == 'revise' and p.feedback %}
+<div class="card" style="background:#fde2e7;color:#7a1e36;margin-top:12px;"><strong>The DOS returned this plan:</strong><br>{{ p.feedback }}</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('lp.save') }}" class="card" style="margin-top:14px;">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {% if p.id %}<input type="hidden" name="id" value="{{ p.id }}">{% endif %}
+  <div class="lf-grid">
+    <div class="lf-f"><label>Topic *</label><input type="text" name="topic" value="{{ p.topic }}" maxlength="200" required></div>
+    <div class="lf-f"><label>Sub-topic</label><input type="text" name="subtopic" value="{{ p.subtopic or '' }}" maxlength="200"></div>
+    <div class="lf-f"><label>Subject</label><input type="text" name="subject" value="{{ p.subject or '' }}" list="lp-subjects" maxlength="80">
+      <datalist id="lp-subjects">{% for s in subjects %}<option value="{{ s }}">{% endfor %}</datalist></div>
+    <div class="lf-f"><label>Class</label>
+      <select name="class_pick"><option value="">Choose a class</option>
+        {% for c in classes %}<option value="{{ c.value }}" {{ 'selected' if p.class_label == c.label }}>{{ c.label }}</option>{% endfor %}</select></div>
+    <div class="lf-f"><label>…or type the class</label><input type="text" name="class_other" value="{{ p.class_label if not classes|selectattr('label','equalto',p.class_label)|list else '' }}" maxlength="60"></div>
+    <div class="lf-f"><label>Lesson date *</label><input type="date" name="plan_date" value="{{ p.plan_date }}" required></div>
+    <div class="lf-f"><label>Term</label><select name="term"><option value="">-</option>{% for t in (1,2,3) %}<option value="{{ t }}" {{ 'selected' if p.term == t }}>Term {{ t }}</option>{% endfor %}</select></div>
+  </div>
+  {% for key, label, hint in sections %}
+  <div class="lf-f"><label>{{ label }}{% if key in ('objectives','development') %} *{% endif %}</label>
+    <textarea name="{{ key }}" placeholder="{{ hint }}">{{ p[key] or '' }}</textarea></div>
+  {% endfor %}
+  <p class="section-note">* needed before you can submit. You can save a draft with only the topic and date.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button type="submit" name="action" value="draft" class="secondary">Save draft</button>
+    <button type="submit" name="action" value="submit" onclick="return confirm('Submit to the DOS for marking? You can\'t edit it until it is returned.');">Submit to the DOS</button>
+  </div>
+</form>
+{% endblock %}

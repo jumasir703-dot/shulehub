@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Staff & Logins{% endblock %}
+{% block content %}
+<h1>Staff &amp; Logins</h1>
+<div class="page-head">
+  <p class="section-note" style="max-width:640px;">Who can sign in, and which role they play. What each role is allowed to use — timetables, exams, students, attendance, fees — is decided on the Roles &amp; Access page.</p>
+  <div class="head-actions"><a class="btn" href="{{ url_for('auth.roles_page') }}">Roles &amp; Access</a></div>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h3>Add a login</h3>
+  <form method="post" action="{{ url_for('auth.staff_add') }}">
+    <div class="form-row">
+      <div style="flex:2;"><label>Full name</label><input type="text" name="full_name" required></div>
+      <div><label>Username</label><input type="text" name="username" autocapitalize="none" required></div>
+      <div><label>Role</label>
+        <select name="role">{% for k, label in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if k == 'teacher' }}>{{ label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-row">
+      <div><label>Temporary password (8+ characters)</label><input type="text" name="password" autocomplete="off" required></div>
+      <div><label>Timetable teacher (optional)</label>
+        <select name="teacher_id"><option value="">—</option>{% for t in teachers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></div>
+      <div style="flex:0;"><button type="submit">Create login</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Teacher</th><th>Last sign-in</th><th>Active</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.full_name }}{% if u.id == user.id %} <span class="badge ok">you</span>{% endif %}
+          <form id="upd{{ u.id }}" method="post" action="{{ url_for('auth.staff_update', user_id=u.id) }}"></form></td>
+        <td>{{ u.username }}</td>
+        <td><select form="upd{{ u.id }}" name="role" style="min-width:120px;">{% for k, label in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if k == u.role }}>{{ label }}</option>{% endfor %}</select></td>
+        <td><select form="upd{{ u.id }}" name="teacher_id" style="min-width:140px;"><option value="">—</option>{% for t in teachers %}<option value="{{ t.id }}" {{ 'selected' if t.name == u.teacher_name }}>{{ t.name }}</option>{% endfor %}</select></td>
+        <td class="section-note">{{ u.last_login or 'never' }}</td>
+        <td><input form="upd{{ u.id }}" type="checkbox" name="active" value="1" {{ 'checked' if u.active }}></td>
+        <td><button form="upd{{ u.id }}" class="small secondary" type="submit">Save</button></td>
+      </tr>
+      <tr>
+        <td colspan="7" style="padding-top:0;">
+          <form method="post" action="{{ url_for('auth.staff_password', user_id=u.id) }}" class="inline-actions">
+            <input type="text" name="password" placeholder="New temporary password" autocomplete="off" style="max-width:240px;" required>
+            <button class="small secondary" type="submit">Reset password</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

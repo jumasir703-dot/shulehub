@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Download attendance{% endblock %}
+{% block content %}
+<style>
+  .ae-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:10px}
+  .ae-row label{display:flex;flex-direction:column;gap:3px;font-weight:600;font-size:.85rem}
+</style>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">Download attendance</h1><a href="{{ url_for('attendance.index') }}">Back to Attendance</a>
+</div>
+<p class="section-note">Download the registers as a PDF to print or a CSV to open in Excel.</p>
+
+{% macro class_pick(all_label) %}
+  <label>Class<select name="class"><option value="">{{ all_label }}</option>{% for c in classes %}<option value="{{ c.key }}">{{ c.label }}</option>{% endfor %}</select></label>
+{% endmacro %}
+
+<form method="get" class="card">
+  <h3 style="margin:0;">Daily register</h3>
+  <p class="section-note" style="margin:2px 0 0;">Everyone's status for one day.</p>
+  <div class="ae-row">
+    <label>Date<input type="date" name="date" value="{{ today }}" max="{{ today }}"></label>
+    {{ class_pick('Whole school') }}
+    <button type="submit" formaction="{{ url_for('attexport.register_pdf') }}">Download PDF</button>
+    <button type="submit" formaction="{{ url_for('attexport.register_csv') }}" class="secondary">Download CSV</button>
+  </div>
+</form>
+
+<form method="get" class="card">
+  <h3 style="margin:0;">Period summary</h3>
+  <p class="section-note" style="margin:2px 0 0;">Days present, late, absent and attendance % per student over a date range.</p>
+  <div class="ae-row">
+    <label>From<input type="date" name="from" value="{{ month_start }}"></label>
+    <label>To<input type="date" name="to" value="{{ today }}" max="{{ today }}"></label>
+    {{ class_pick('Whole school') }}
+    <button type="submit" formaction="{{ url_for('attexport.summary_pdf') }}">Download PDF</button>
+    <button type="submit" formaction="{{ url_for('attexport.summary_csv') }}" class="secondary">Download CSV</button>
+  </div>
+</form>
+
+<form method="get" class="card">
+  <h3 style="margin:0;">Register grid</h3>
+  <p class="section-note" style="margin:2px 0 0;">One class: a row per student and a column per day, like a paper register. Up to {{ max_days }} marked days at a time.</p>
+  <div class="ae-row">
+    <label>From<input type="date" name="from" value="{{ month_start }}"></label>
+    <label>To<input type="date" name="to" value="{{ today }}" max="{{ today }}"></label>
+    <label>Class<select name="class" required><option value="">Choose a class</option>{% for c in classes %}<option value="{{ c.key }}">{{ c.label }}</option>{% endfor %}</select></label>
+    <button type="submit" formaction="{{ url_for('attexport.grid_pdf') }}">Download PDF</button>
+    <button type="submit" formaction="{{ url_for('attexport.grid_csv') }}" class="secondary">Download CSV</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Clearance settings{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">Clearance settings</h1><a href="{{ url_for('clearance.index') }}">Back to Clearance</a>
+</div>
+<p class="section-note">Fees{% if library_on %} and the library{% endif %} are always checked automatically. Add the other departments that must sign a student off.</p>
+
+<div class="card">
+  <h3 style="margin-top:0;">Departments that sign off</h3>
+  {% for d in depts %}
+  <form method="post" action="{{ url_for('clearance.dept_delete', dept_id=d.id) }}" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.08);" onsubmit="return confirm('Remove {{ d.name }}? Its sign-offs are deleted too.');">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><span>{{ d.name }}</span><button type="submit" class="secondary">Remove</button>
+  </form>
+  {% else %}<p class="section-note" style="margin:0;">No departments yet.</p>{% endfor %}
+  <form method="post" action="{{ url_for('clearance.dept_add') }}" style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="text" name="name" placeholder="e.g. Tuck shop, Transport, Textbooks" maxlength="60" style="min-width:260px;"><button type="submit">Add department</button>
+  </form>
+</div>
+
+<form method="post" action="{{ url_for('clearance.settings_save') }}" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h3 style="margin-top:0;">Fees</h3>
+  <label style="display:flex;flex-direction:column;gap:4px;max-width:300px;font-weight:600;">Balance still allowed for clearance (KES)
+    <input type="text" name="fee_allow" value="{{ fee_allow }}"></label>
+  <p class="section-note">0 means the fee balance must be fully paid. A student in credit is always cleared.</p>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

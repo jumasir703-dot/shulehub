@@ -1,93 +1,63 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<h1>Welcome, {{ user.full_name.split(' ')[0] }}</h1>
+<style>
+  .hm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-top:18px}
+  .hm-card{display:flex;flex-direction:column;gap:6px;padding:22px 24px;text-decoration:none;color:inherit;background:var(--paper,#fffdf8);
+    border:1px solid var(--line,#e5e0d4);border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:transform .15s ease}
+  .hm-card:hover{transform:translateY(-3px)}
+  .hm-ic{width:46px;height:46px;border-radius:14px;background:var(--green-900,#103524);color:#fff;display:grid;place-items:center;font-size:22px;margin-bottom:6px}
+  .hm-card h2{margin:0;font-size:1.45rem}
+  .hm-card p{margin:0;opacity:.8;line-height:1.45}
+  .hm-go{margin-top:8px;font-weight:700;color:var(--green-800,#1b5e3f)}
+</style>
+<h1>Welcome, {{ user.full_name.split(' ')[0] if user and user.full_name else '' }}</h1>
 <p class="section-note">Timetable, exam analysis and school management in one place.</p>
-<div class="module-grid">
-  {% if can('timetable_edit') or can('timetable_view') %}
-  <a class="module-card" href="{{ url_for('builder_page' if can('timetable_edit') else 'view_page') }}">
-    <span class="module-icon">▦</span>
-    <h2>Timetable</h2>
-    <p>Grades, streams, subjects, teachers and rooms — build and export class and teacher timetables from Pre-Primary through Senior School.</p>
-    <span class="module-go">{{ 'Open timetable' if can('timetable_edit') else 'View timetables' }} →</span>
-  </a>
+
+<div class="hm-grid">
+  {% if 'dashboard' in loaded_modules %}
+  <a class="hm-card" href="{{ url_for('dashboard.index') }}"><span class="hm-ic">◔</span><h2>Dashboard</h2>
+    <p>Today's figures at a glance: students, attendance, fees, the library and exams.</p><span class="hm-go">Open dashboard →</span></a>
   {% endif %}
-  {% if can('exams') %}
-  <a class="module-card" href="{{ url_for('analytics.exams_page') }}">
-    <span class="module-icon">∑</span>
-    <h2>Exam Analysis</h2>
-    <p>Enter marks, rank students, analyse subjects and teachers, compare exams, and print report forms.</p>
-    <span class="module-go">Open exam analysis →</span>
-  </a>
+
+  {% if can('timetable_view') or can('timetable_edit') %}
+  <a class="hm-card" href="{{ url_for('view_page') if can('timetable_view') else url_for('grades_page') }}"><span class="hm-ic">▦</span><h2>Timetable</h2>
+    <p>Grades, streams, subjects, teachers and rooms — build and export class and teacher timetables from Pre-Primary through Senior School.</p><span class="hm-go">Open timetable →</span></a>
   {% endif %}
-  {% if can('marks_entry') and not can('exams') %}
-  <a class="module-card" href="{{ url_for('mymarks.index') }}">
-    <span class="module-icon">✎</span>
-    <h2>My Marks</h2>
-    <p>Enter or upload marks for the subjects and classes you teach, submit them, and see the results once they are published.</p>
-    <span class="module-go">Open my marks →</span>
-  </a>
+
+  {% if can('exams') or can('marks_entry') %}
+  <a class="hm-card" href="{{ url_for('analytics.exams_page') if can('exams') else url_for('mymarks.index') }}"><span class="hm-ic">∑</span><h2>Exam Analysis</h2>
+    <p>Enter marks, rank students, analyse subjects and teachers, compare exams, and print report forms.</p><span class="hm-go">Open exam analysis →</span></a>
   {% endif %}
+
   {% if can('results_publish') %}
-  <a class="module-card" href="{{ url_for('results.index') }}">
-    <span class="module-icon">✓</span>
-    <h2>Compile &amp; Publish Results</h2>
-    <p>Follow which teachers have submitted their subject marks, allocate subjects, and publish the compiled results.</p>
-    <span class="module-go">Open results →</span>
-  </a>
+  <a class="hm-card" href="{{ url_for('results.index') }}"><span class="hm-ic">✓</span><h2>Compile &amp; Publish Results</h2>
+    <p>Follow which teachers have submitted their subject marks, allocate subjects, and publish the compiled results.</p><span class="hm-go">Open results →</span></a>
   {% endif %}
-  {% if can('students_view') %}
-  <a class="module-card" href="{{ url_for('school.students') }}">
-    <span class="module-icon">☗</span>
-    <h2>School Management</h2>
-    <p>Student records and guardians{% if can('attendance') %}, daily attendance{% endif %}{% if can('fees') %}, fees, M-Pesa payments and receipts{% endif %}{% if can('students_manage') %}, promotion{% endif %}{% if user.role == 'admin' %} and staff logins{% endif %}.</p>
-    <span class="module-go">Open school management →</span>
-  </a>
-  {% elif can('attendance') or can('fees') %}
-  <a class="module-card" href="{{ url_for('attendance.index' if can('attendance') else 'fees.index') }}">
-    <span class="module-icon">☗</span>
-    <h2>School Management</h2>
-    <p>{% if can('attendance') %}Daily attendance{% endif %}{% if can('attendance') and can('fees') %} and {% endif %}{% if can('fees') %}fees, M-Pesa payments and receipts{% endif %}.</p>
-    <span class="module-go">Open →</span>
-  </a>
-  {% endif %}
-</div>
 
-{% if demo_available and not demo_mode %}
-<div class="card callout" style="margin-top:22px;">
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-    <div>
-      <strong>New to ShuleHub?</strong>
-      <div class="section-note" style="margin:2px 0 0;">See how the timetable, exams, attendance and fees work using a pretend school. Your own records are never touched.</div>
-    </div>
-    <a href="{{ url_for('demo.index') }}"><button type="button" class="secondary">See an example</button></a>
-  </div>
-</div>
-{% endif %}
-
-{% if today %}
-<div class="stat-row" style="margin-top:22px;">
-  {% if 'att_marked' in today %}
-  <a class="stat" href="{{ url_for('attendance.index') }}" style="text-decoration:none;color:inherit;"><span>Attendance today</span><strong>{{ today.att_pct if today.att_pct is not none else '—' }}{% if today.att_pct is not none %}<small>%</small>{% endif %}</strong></a>
-  <div class="stat"><span>Absent today</span><strong>{{ today.absent }}</strong></div>
+  {% if can('students_view') or can('attendance') or can('fees') or user.role == 'admin' %}
+  <a class="hm-card" href="{{ url_for('school.students') if can('students_view') else (url_for('attendance.index') if can('attendance') else url_for('fees.index')) }}"><span class="hm-ic">☗</span><h2>School Management</h2>
+    <p>Student records and guardians, daily attendance, fees, M-Pesa payments and receipts, promotion and staff logins.</p><span class="hm-go">Open school management →</span></a>
   {% endif %}
-  {% if 'owing' in today %}
-  <a class="stat" href="{{ url_for('fees.balances') }}" style="text-decoration:none;color:inherit;"><span>Fees outstanding</span><strong class="small-val {{ 'owes' if today.owing > 0 }}">KES {{ today.owing|kes }}</strong></a>
-  <div class="stat"><span>Collected this month</span><strong class="small-val">KES {{ today.month|kes }}</strong></div>
+
+  {% if 'library' in loaded_modules and can('library') %}
+  <a class="hm-card" href="{{ url_for('library.index') }}"><span class="hm-ic">▤</span><h2>Library</h2>
+    <p>Catalogue, issue and return books, fines, labels and reports.</p><span class="hm-go">Open library →</span></a>
+  {% endif %}
+
+  {% if 'lp' in loaded_modules and (can('lesson_plans') or can('lesson_plans_mark')) %}
+  <a class="hm-card" href="{{ url_for('lp.index') }}"><span class="hm-ic">✎</span><h2>Lesson Plans</h2>
+    <p>Write lesson plans and submit them, or mark the plans teachers have submitted.</p><span class="hm-go">Open lesson plans →</span></a>
+  {% endif %}
+
+  {% if 'clearance' in loaded_modules and can('clearance') %}
+  <a class="hm-card" href="{{ url_for('clearance.index') }}"><span class="hm-ic">☑</span><h2>Clearance</h2>
+    <p>See who is cleared by fees and the library, sign students off and print clearance forms.</p><span class="hm-go">Open clearance →</span></a>
+  {% endif %}
+
+  {% if 'msg' in loaded_modules and can('messaging') %}
+  <a class="hm-card" href="{{ url_for('msg.index') }}"><span class="hm-ic">✉</span><h2>Messages</h2>
+    <p>Send text messages and emails to guardians.</p><span class="hm-go">Open messages →</span></a>
   {% endif %}
 </div>
-{% endif %}
-
-{% if user.role == 'admin' %}
-<div class="card" style="margin-top:22px;">
-  <h3>At a glance</h3>
-  <div class="stat-row" style="margin:0;">
-    <div class="stat"><span>Grades</span><strong>{{ counts.grades }}</strong></div>
-    <div class="stat"><span>Streams</span><strong>{{ counts.streams }}</strong></div>
-    <div class="stat"><span>Teachers</span><strong>{{ counts.teachers }}</strong></div>
-    <div class="stat"><span>Students</span><strong>{{ counts.students }}</strong></div>
-    <div class="stat"><span>Exams</span><strong>{{ counts.exams }}</strong></div>
-  </div>
-</div>
-{% endif %}
 {% endblock %}

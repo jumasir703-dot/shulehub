@@ -1,0 +1,8 @@
+{# Menu links, included inside the menu panel of base.html. #}
+<div class="menu-sep">Staff Alerts</div>
+<a href="{{ url_for('pager.inbox') }}" class="{{ 'active' if ep == 'pager.inbox' else '' }}">My Alerts<span class="badge warn" id="pager-menu-count" hidden></span></a>
+{% if can('pager') %}
+<a href="{{ url_for('pager.compose') }}" class="{{ 'active' if ep in ('pager.compose', 'pager.send') else '' }}">Send an Alert</a>
+<a href="{{ url_for('pager.sent') }}" class="{{ 'active' if ep in ('pager.sent', 'pager.detail') else '' }}">Sent Alerts</a>
+<a href="{{ url_for('pager.contacts') }}" class="{{ 'active' if ep == 'pager.contacts' else '' }}">Phone Numbers &amp; SMS</a>
+{% endif %}

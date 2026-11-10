@@ -1,0 +1,2 @@
+{% set c_cmp = chart_compare(result, res_a, res_b) %}
+{% if c_cmp %}<div class="card"><h3>Subject means: A and B</h3>{{ c_cmp }}</div>{% endif %}

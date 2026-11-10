@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Schools{% endblock %}
+{% block content %}
+<style>
+  .sch-dim{ opacity:.6; }
+  .sch-actions{ display:flex; flex-wrap:wrap; gap:6px; }
+</style>
+<div class="page-head" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
+  <div>
+    <h1 style="margin-bottom:2px;">Our schools</h1>
+    <p class="section-note" style="margin-top:0;">One login, every school. Each school keeps its own students, teachers, timetable, exams and fees.</p>
+  </div>
+  <a class="btn" href="{{ url_for('schools.new') }}">+ Add a school</a>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><span>Schools</span><strong>{{ totals.schools }}</strong></div>
+  <div class="stat"><span>Students (all schools)</span><strong>{{ totals.students }}</strong></div>
+  <div class="stat"><span>Teachers (all schools)</span><strong>{{ totals.teachers }}</strong></div>
+  <div class="stat"><span>Fees collected this month</span><strong class="small-val">KES {{ '{:,.0f}'.format(totals.collected) }}</strong></div>
+  <div class="stat"><span>Fees outstanding</span><strong class="small-val">KES {{ '{:,.0f}'.format(totals.outstanding) }}</strong></div>
+</div>
+
+<div class="card">
+  <h3>Each school</h3>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>School</th><th>Level</th><th class="money">Students</th><th class="money">Teachers</th>
+      <th class="money">Attendance today</th><th class="money">Collected (month)</th><th class="money">Owing</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr class="{{ 'sch-dim' if not r.active }}">
+        <td><strong>{{ r.display }}</strong>{% if r.id == current %} <span class="badge ok">you are here</span>{% endif %}{% if not r.active %} <span class="badge warn">archived</span>{% endif %}</td>
+        <td>{{ r.level_label }}</td>
+        {% if r.active %}
+        <td class="money">{{ r.snap.students if r.snap.students is not none else '-' }}</td>
+        <td class="money">{{ r.snap.teachers if r.snap.teachers is not none else '-' }}</td>
+        <td class="money">{{ (r.snap.attendance_pct ~ '%') if r.snap.attendance_pct is not none else '-' }}</td>
+        <td class="money">{{ '{:,.0f}'.format(r.snap.collected_month) if r.snap.collected_month is not none else '-' }}</td>
+        <td class="money {{ 'owes' if r.snap.outstanding }}">{{ '{:,.0f}'.format(r.snap.outstanding) if r.snap.outstanding is not none else '-' }}</td>
+        {% else %}<td colspan="5" class="section-note">Records are kept.</td>{% endif %}
+        <td><div class="sch-actions">
+          {% if r.active and r.id != current %}
+          <form method="post" action="{{ url_for('schools.switch') }}"><input type="hidden" name="school_id" value="{{ r.id }}"><button type="submit" class="small">Open</button></form>
+          {% endif %}
+          <a class="btn small secondary" href="{{ url_for('schools.people', school_id=r.id) }}">People</a>
+          <a class="btn small secondary" href="{{ url_for('schools.edit', school_id=r.id) }}">Edit</a>
+        </div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% if chart_students or chart_fees %}
+<div class="grid-even">
+  {% if chart_students %}<div class="card"><h3>Students per school</h3>{{ chart_students }}</div>{% endif %}
+  {% if chart_fees %}<div class="card"><h3>Fees by school</h3>{{ chart_fees }}</div>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

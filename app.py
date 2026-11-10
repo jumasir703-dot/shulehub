@@ -45,6 +45,8 @@ from analytics import analytics_bp
 from attendance import attendance_bp
 from auth import auth_bp
 from fees import fees_bp, outstanding_total
+from schools_admin import schools_bp
+from pager import pager_bp
 from remedial import remedial_bp
 from invigilation import invigilation_bp
 from teacher_attendance import teacher_attendance_bp
@@ -74,6 +76,9 @@ app.register_blueprint(results_bp)
 app.register_blueprint(school_bp)
 app.register_blueprint(attendance_bp)
 app.register_blueprint(fees_bp)
+app.register_blueprint(schools_bp)
+import charts; charts.init_app(app)
+app.register_blueprint(pager_bp)
 app.register_blueprint(remedial_bp)
 app.register_blueprint(invigilation_bp)
 app.register_blueprint(teacher_attendance_bp)
@@ -85,7 +90,7 @@ app.register_blueprint(demo.demo_bp)
 # Library and Messages are loaded defensively: if one of them can't start (a missing
 # file, say) the rest of ShuleHub still runs, the menu hides that section, and the
 # reason is printed in the console / app.log instead of every page crashing.
-for _module, _blueprint in (("library", "library_bp"), ("messaging", "msg_bp")):
+for _module, _blueprint in (("library", "library_bp"), ("messaging", "msg_bp"), ("search", "search_bp"), ("dashboard", "dashboard_bp"), ("school_theme", "theme_bp"), ("clearance", "clearance_bp"), ("lesson_plans", "lp_bp"), ("attendance_export", "attexport_bp")):
     try:
         app.register_blueprint(getattr(__import__(_module), _blueprint))
     except Exception as _err:
@@ -102,6 +107,7 @@ app.teardown_request(demo.deactivate)
 app.before_request(auth.gate)
 app.after_request(auth.add_security_headers)
 app.context_processor(auth.inject_user)
+import tenancy; tenancy.install(app)
 
 with app.app_context():
     db.init_db()
@@ -123,7 +129,7 @@ def inject_school():
 # Endpoints reachable even before setup is finished: the wizard itself,
 # static files (css/js/icons), and the offline fallback page.
 _ONBOARDING_EXEMPT_PREFIXES = ("onboarding.", "static", "auth.")
-_ONBOARDING_EXEMPT_ENDPOINTS = {"offline_page", "guide_page", "logo_image", "get_app_page"}
+_ONBOARDING_EXEMPT_ENDPOINTS = {"themes.css", "offline_page", "guide_page", "logo_image", "get_app_page"}
 
 
 @app.before_request

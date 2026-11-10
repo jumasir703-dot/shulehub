@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block content %}<p><a href="{{ url_for('links') }}">← Tracked links</a></p>
+<h1>{{ link.recipient }} {% if not link.active %}<span class="tag bad">link off</span>{% endif %}</h1>
+<div class="card"><p>Send this: <span class="copy">{{ public }}</span></p><p class="muted">{{ link.file_name or link.url }} · created {{ link.created_at|local }}{% if link.note %} · {{ link.note }}{% endif %}</p>
+<form method="post" action="{{ url_for('link_toggle', lid=link.id) }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="s">{{ 'Turn link off' if link.active else 'Turn link on' }}</button></form></div>
+<div class="card"><h2>Devices that opened it ({{ devices|length }})</h2><table><tr><th>Device</th><th>From</th><th>First</th><th>Last</th><th>Times</th></tr>
+{% for d in devices %}<tr><td>{{ short_ua(d.ua) }}</td><td class="muted">{{ d.ip }}</td><td>{{ d.first|local }}</td><td>{{ d.last|local }}</td><td>{{ d.n }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Nobody has opened it yet.</td></tr>{% endfor %}</table>
+{% if devices|length > 1 %}<p class="muted">More than one device opened this link, so it may have been forwarded.</p>{% endif %}</div>
+<div class="card"><h2>Everything that happened</h2><table><tr><th>When</th><th>What</th><th>Device</th></tr>
+{% for e in events %}<tr><td>{{ e.at|local }}</td><td>{% if e.kind=='preview' %}<span class="muted">link preview / scanner (not a person)</span>{% elif e.kind=='download' %}<span class="tag ok">downloaded</span>{% else %}opened{% endif %}</td><td class="muted">{{ short_ua(e.ua) }} · {{ e.ip }}</td></tr>{% endfor %}</table></div>{% endblock %}

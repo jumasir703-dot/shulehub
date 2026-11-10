@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Add a school{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('schools.index') }}">← Our schools</a>
+<h1>Add a school</h1>
+<p class="section-note">The new school starts with its own empty records. Pick its level and the right grades and subjects are set up for you.</p>
+<form method="post" class="card">
+  <div class="form-row" style="margin-top:0;">
+    <div style="flex:2;"><label>School name</label><input type="text" name="name" value="{{ form.get('name', '') }}" maxlength="120" required placeholder="e.g. Hillview Junior School"></div>
+    <div style="flex:2;"><label>Tagline (optional)</label><input type="text" name="tagline" value="{{ form.get('tagline', '') }}" maxlength="120"></div>
+  </div>
+  <label style="margin-top:14px;">Level of the school</label>
+  <div class="sch-levels">
+    {% for key, info in levels.items() %}
+    <label class="sch-level"><input type="radio" name="level" value="{{ key }}" {{ 'checked' if (form.get('level', 'primary') == key) }}>
+      <span><strong>{{ info[0] }}</strong><small>{{ info[1] }}</small></span></label>
+    {% endfor %}
+  </div>
+  <p class="section-note">You can add more grades later under Grades &amp; Streams.</p>
+  <button type="submit" style="margin-top:14px;">Create school</button>
+</form>
+<style>
+  .sch-levels{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; margin-top:6px; }
+  .sch-level{ display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:8px; cursor:pointer; margin:0; font-size:.92rem; color:var(--ink); background:var(--paper); }
+  .sch-level:has(input:checked){ border-color:var(--green-700); box-shadow:0 0 0 2px var(--green-500) inset; }
+  .sch-level input{ width:auto; margin-top:4px; }
+  .sch-level small{ display:block; color:var(--muted); font-size:.78rem; }
+</style>
+{% endblock %}

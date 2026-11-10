@@ -2,6 +2,9 @@
 {% block title %}Extra hours{% endblock %}
 {% block content %}
 <style>
+  input[type=time]{ width:100%; padding:8px 10px; border-radius:7px; border:1px solid var(--line); background:var(--paper);
+    font-size:.92rem; color:var(--ink); font-family:inherit; }
+  input[type=time]:focus{ outline:2px solid var(--green-500); outline-offset:1px; }
   .rm-tl{ display:flex; height:38px; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--paper); }
   .rm-seg{ display:flex; align-items:center; justify-content:center; font-size:.74rem; font-weight:600; white-space:nowrap; overflow:hidden; }
   .rm-seg.main{ background:var(--green-900); color:#fff; }
@@ -11,22 +14,20 @@
   .rm-days{ display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:6px; }
   .rm-days label{ display:inline-flex; align-items:center; gap:6px; font-size:.9rem; color:var(--ink); margin:0; }
   .rm-warn{ border-left:4px solid var(--gold-500); }
-  .rm-block{ border-top:1px solid var(--line); margin-top:16px; padding-top:12px; }
-  .rm-block:first-of-type{ border-top:0; margin-top:8px; padding-top:0; }
 </style>
-<h1>Remedial Timetable <span class="section-note" style="font-weight:400;">· {{ profiles[schedule].label }}</span></h1>
+<h1>Remedial Timetable</h1>
 {% include "remedial/_nav.html" %}
 
 {% if timeline %}
 <div class="card">
   <h3 style="margin-top:0;">Day at a glance <span class="section-note" style="margin-left:6px;">({{ timeline.day }})</span></h3>
-  <div class="rm-tl" role="img" aria-label="The day with extra sessions and normal lessons">
+  <div class="rm-tl" role="img" aria-label="The school day with normal lessons and extra sessions">
     {% for sg in timeline.segments %}
     <div class="rm-seg {{ sg.kind }}" style="width:{{ sg.pct }}%;" title="{{ sg.label or 'Free' }} {{ sg.start }}–{{ sg.end }}">{% if sg.kind != 'gap' %}{{ sg.label }}{% endif %}</div>
     {% endfor %}
   </div>
   <div class="rm-times"><span>{{ timeline.segments[0].start }}</span><span>{{ timeline.segments[-1].end }}</span></div>
-  <p class="section-note">Green is the normal school day; gold is the extra (remedial) sessions: M = morning, E = evening.</p>
+  <p class="section-note">Green is the normal school day; gold is the extra (remedial) sessions.</p>
 </div>
 {% endif %}
 
@@ -35,79 +36,56 @@
 {% endfor %}
 
 <div class="card">
-  <h3 style="margin-top:0;">Extra working hours — {{ profiles[schedule].label|lower }}</h3>
+  <h3 style="margin-top:0;">Extra working hours</h3>
   <p class="section-note">
-    Choose the days for the <strong>morning</strong> sessions (before school) and for the <strong>evening</strong>
-    sessions (after school) separately. Leave a block with no days ticked to switch it off.
-    The {{ 'weekend' if schedule == 'weekend' else 'weekday' }} schedule is saved and generated on its own, so it never
-    changes the {{ 'weekday' if schedule == 'weekend' else 'weekend' }} one, and the normal timetable and Day Structure are not touched.
+    Choose when the extra hours happen. Saving creates the remedial sessions; the normal
+    timetable and Day Structure are not changed.
     {% if not s.configured %}<strong>Not saved yet</strong>, so these are suggested values.{% endif %}
   </p>
   <form method="post" action="{{ url_for('remedial.setup_save') }}">
-    <input type="hidden" name="schedule" value="{{ schedule }}">
-    {% for key, base, letter, name in periods %}
-    {% set b = s[key] %}
-    {% set p = key[0] %}
-    <div class="rm-block">
-      <h4 style="margin:0 0 4px;">{{ name }} sessions ({{ letter }}1, {{ letter }}2 …)</h4>
-      <label>Days</label>
-      <div class="rm-days">
-        {% for d in weekdays %}
-        <label><input type="checkbox" name="{{ p }}_days" value="{{ d }}" {{ 'checked' if d in b.days }}> {{ d }}</label>
-        {% endfor %}
+    <label>Days</label>
+    <div class="rm-days">
+      {% for d in weekdays %}
+      <label><input type="checkbox" name="days" value="{{ d }}" {{ 'checked' if d in s.days }}> {{ d }}</label>
+      {% endfor %}
+    </div>
+    <div class="form-row">
+      <div>
+        <label>First session starts at</label>
+        <input type="time" name="start_time" value="{{ s.start_time }}" required>
       </div>
-      <div class="form-row">
-        <div>
-          <label>First session starts at</label>
-          <input type="time" name="{{ p }}_start" value="{{ b.start }}">
-        </div>
-        <div>
-          <label>Sessions per day</label>
-          <input type="number" name="{{ p }}_sessions" min="1" max="8" value="{{ b.sessions }}">
-        </div>
+      <div>
+        <label>Session length (minutes)</label>
+        <input type="number" name="session_minutes" min="10" max="180" value="{{ s.session_minutes }}" required>
+      </div>
+      <div>
+        <label>Sessions per day</label>
+        <input type="number" name="sessions_per_day" min="1" max="8" value="{{ s.sessions_per_day }}" required>
+      </div>
+      <div>
+        <label>Gap between sessions (minutes)</label>
+        <input type="number" name="gap_minutes" min="0" max="60" value="{{ s.gap_minutes }}">
       </div>
     </div>
-    {% endfor %}
-
-    <div class="rm-block">
-      <h4 style="margin:0 0 4px;">Both blocks</h4>
-      <div class="form-row">
-        <div>
-          <label>Session length (minutes)</label>
-          <input type="number" name="session_minutes" min="10" max="180" value="{{ s.session_minutes }}" required>
-        </div>
-        <div>
-          <label>Gap between sessions (minutes)</label>
-          <input type="number" name="gap_minutes" min="0" max="60" value="{{ s.gap_minutes }}">
-        </div>
-      </div>
-    </div>
-    <button type="submit" style="margin-top:16px;">Save {{ profiles[schedule].label|lower }} extra hours</button>
+    <button type="submit" style="margin-top:16px;">Save extra hours</button>
   </form>
 </div>
 
-{% if s.configured and per_class %}
+{% if s.configured %}
 <div class="card">
-  <h3 style="margin-top:0;">Sessions that result</h3>
-  <table class="tt-view-table" style="width:auto; min-width:320px;">
-    <thead><tr><th>Block</th><th>Days</th><th>Session</th><th>Time</th></tr></thead>
+  <h3 style="margin-top:0;">Sessions on each selected day</h3>
+  <table class="tt-view-table" style="width:auto; min-width:280px;">
+    <thead><tr><th>Session</th><th>Time</th></tr></thead>
     <tbody>
-      {% for key, base, letter, name in periods %}
-        {% if s[key].days %}
-          {% for n, start, end in times[key] %}
-          <tr>
-            {% if loop.first %}<td rowspan="{{ times[key]|length }}">{{ name }}</td><td rowspan="{{ times[key]|length }}">{{ s[key].days|join(', ') }}</td>{% endif %}
-            <td>{{ letter }}{{ n - base }}</td><td>{{ start }}–{{ end }}</td>
-          </tr>
-          {% endfor %}
-        {% endif %}
+      {% for n, start, end in times %}
+      <tr><td>S{{ n }}</td><td>{{ start }}–{{ end }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
   <p class="section-note">
-    That is {{ per_class }} remedial session{{ '' if per_class == 1 else 's' }} per class per week.
-    Next: choose the <a href="{{ url_for('remedial.plan', schedule=schedule) }}">subjects and teachers</a>
-    for the {{ profiles[schedule].label|lower }} schedule.
+    {{ s.days|length }} day{{ '' if s.days|length == 1 else 's' }} × {{ s.sessions_per_day }}
+    = {{ s.days|length * s.sessions_per_day }} remedial sessions per class per week.
+    Next: choose the <a href="{{ url_for('remedial.plan') }}">subjects and teachers</a>.
   </p>
 </div>
 {% endif %}

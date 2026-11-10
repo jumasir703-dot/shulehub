@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}My alerts{% endblock %}
+{% block content %}
+{% include "pager/_style.html" %}
+<h1>Staff Alerts</h1>
+{% include "pager/_nav.html" %}
+
+{% if alerts %}
+  <p class="section-note" style="margin:0 0 14px;">
+    {% if unread %}<strong>{{ unread }}</strong> alert{{ '' if unread == 1 else 's' }} waiting for you to confirm.{% else %}You're all caught up.{% endif %}
+  </p>
+  {% for a in alerts %}
+  <article class="card pg-alert {{ 'urgent' if a.urgent }} {{ '' if a.confirmed else 'new' }}">
+    <span class="pg-kind {{ a.kind }}">{{ a.kind_label }}</span>
+    <h3>{{ a.title }}</h3>
+    {% if a.when %}<div class="pg-when">{{ a.when }}</div>{% endif %}
+    {% if a.venue %}<div class="pg-meta">Venue: {{ a.venue }}</div>{% endif %}
+    {% if a.body %}<p class="pg-body">{{ a.body }}</p>{% endif %}
+    <div class="pg-meta" style="margin-top:8px;">From {{ a.sent_by }} · {{ a.sent_at }}</div>
+    <div class="pg-actions">
+      {% if a.confirmed %}
+        <span class="badge ok">Confirmed {{ a.confirmed_at }}</span>
+      {% else %}
+        <form method="post" action="{{ url_for('pager.ack', alert_id=a.id) }}" class="pg-inline"><button type="submit">Got it</button></form>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+{% else %}
+  <div class="card"><p class="section-note" style="margin:0;">No alerts yet. When someone sends you a meeting or event alert, it will appear here and as a pop-up.</p></div>
+{% endif %}
+
+<div class="card" style="margin-top:22px;">
+  <h3 style="margin-top:0;">My phone number</h3>
+  <p class="section-note">
+    {% if sms.configured %}Alerts can also reach you by SMS. Save your number so you don't miss one when you're away from the screen.
+    {% else %}SMS alerts aren't switched on at your school yet. You can still save your number for when they are.{% endif %}
+  </p>
+  <form method="post" action="{{ url_for('pager.my_phone') }}" class="form-row">
+    <div><label>Phone number</label><input type="tel" name="phone" value="{{ my_phone }}" placeholder="0712 345 678" autocomplete="tel"></div>
+    <div style="flex:0 0 auto;"><button type="submit">Save my number</button></div>
+  </form>
+</div>
+{% endblock %}

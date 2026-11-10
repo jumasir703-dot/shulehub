@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Messaging settings{% endblock %}
+{% block content %}
+<style>
+  .st-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 18px}
+  .st-f{display:flex;flex-direction:column;gap:4px}
+  .st-f label{font-weight:600}
+  .st-f input,.st-f select,.st-f textarea{width:100%}
+  .st-prov{display:none;margin-top:12px}
+  .st-prov.on{display:block}
+  .st-saved{font-size:.8rem;opacity:.75}
+  .st-test{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+</style>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">Messaging settings</h1>
+  <a href="{{ url_for('msg.index') }}">Back to Messages</a>
+</div>
+<p class="section-note">Connect the accounts ShuleHub uses to send text messages and email. Only administrators can see this page. Saved passwords and keys are never shown again.</p>
+
+<form method="post" action="{{ url_for('msg.settings_save') }}" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <h3 style="margin-top:0;">Text messages (SMS)</h3>
+  <div class="st-grid">
+    <div class="st-f"><label for="sms_provider">Provider</label>
+      <select name="sms_provider" id="sms_provider">{% for k, label in sms_providers %}<option value="{{ k }}" {{ 'selected' if cfg.sms_provider == k }}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="st-f"><label for="country_code">Country code</label><input type="text" name="country_code" id="country_code" value="{{ cfg.country_code }}"><span class="st-saved">254 for Kenya. Numbers like 0712 345 678 become +254712345678.</span></div>
+  </div>
+  <p class="section-note" style="margin:6px 0 0;">Status: {% if banner.sms[0] %}ready ({{ banner.sms[1] }}){% else %}not ready: {{ banner.sms[2] }}{% endif %}</p>
+
+  <div class="st-prov" data-for="sms_provider" data-show="simulated"><p class="section-note">Test mode: messages are pretended to be sent. Use this to try ShuleHub out.</p></div>
+  <div class="st-prov" data-for="sms_provider" data-show="africastalking">
+    <div class="st-grid">
+      <div class="st-f"><label>Username</label><input type="text" name="at_username" value="{{ cfg.at_username or '' }}"></div>
+      <div class="st-f"><label>API key</label><input type="password" name="at_api_key" autocomplete="new-password" placeholder="{{ 'saved: type a new one to replace it' if secrets_set.at_api_key else '' }}"></div>
+      <div class="st-f"><label>Sender ID (optional)</label><input type="text" name="at_sender_id" value="{{ cfg.at_sender_id or '' }}"></div>
+      <div class="st-f"><label><input type="checkbox" name="at_sandbox" value="1" {{ 'checked' if cfg.at_sandbox == '1' }}> Sandbox (free testing; username must be "sandbox")</label></div>
+    </div>
+  </div>
+  <div class="st-prov" data-for="sms_provider" data-show="generic">
+    <div class="st-grid">
+      <div class="st-f"><label>Gateway web address</label><input type="text" name="generic_url" value="{{ cfg.generic_url or '' }}" placeholder="https://..."></div>
+      <div class="st-f"><label>Method</label><select name="generic_method"><option value="POST" {{ 'selected' if cfg.generic_method != 'GET' }}>POST</option><option value="GET" {{ 'selected' if cfg.generic_method == 'GET' }}>GET</option></select></div>
+      <div class="st-f"><label>Body type</label><select name="generic_content"><option value="form" {{ 'selected' if cfg.generic_content != 'json' }}>Form</option><option value="json" {{ 'selected' if cfg.generic_content == 'json' }}>JSON</option></select></div>
+      <div class="st-f"><label>Success text (optional)</label><input type="text" name="generic_ok_text" value="{{ cfg.generic_ok_text or '' }}"><span class="st-saved">Text a successful reply must contain.</span></div>
+      <div class="st-f"><label>Sender ID</label><input type="text" name="generic_sender" value="{{ cfg.generic_sender or '' }}"></div>
+      <div class="st-f"><label>Username</label><input type="text" name="generic_username" value="{{ cfg.generic_username or '' }}"></div>
+      <div class="st-f"><label>API key</label><input type="password" name="generic_api_key" autocomplete="new-password" placeholder="{{ 'saved: type a new one to replace it' if secrets_set.generic_api_key else '' }}"></div>
+    </div>
+    <div class="st-grid" style="margin-top:12px;">
+      <div class="st-f"><label>Body template</label><textarea name="generic_body" rows="4">{{ cfg.generic_body or '' }}</textarea><span class="st-saved">Use {to}, {to_plain}, {message}, {sender}, {api_key}, {username}.</span></div>
+      <div class="st-f"><label>Headers (one per line)</label><textarea name="generic_headers" rows="4">{{ cfg.generic_headers or '' }}</textarea></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:26px;">Email</h3>
+  <div class="st-grid">
+    <div class="st-f"><label for="email_provider">Provider</label>
+      <select name="email_provider" id="email_provider">{% for k, label in email_providers %}<option value="{{ k }}" {{ 'selected' if cfg.email_provider == k }}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="st-f"><label>"From" email address</label><input type="text" name="email_from_address" value="{{ cfg.email_from_address or '' }}"></div>
+    <div class="st-f"><label>"From" name</label><input type="text" name="email_from_name" value="{{ cfg.email_from_name or '' }}" placeholder="Your school's name"></div>
+    <div class="st-f"><label>Replies go to (optional)</label><input type="text" name="email_reply_to" value="{{ cfg.email_reply_to or '' }}"></div>
+  </div>
+  <p class="section-note" style="margin:6px 0 0;">Status: {% if banner.email[0] %}ready ({{ banner.email[1] }}){% else %}not ready: {{ banner.email[2] }}{% endif %}</p>
+
+  <div class="st-prov" data-for="email_provider" data-show="simulated"><p class="section-note">Test mode: emails are pretended to be sent.</p></div>
+  <div class="st-prov" data-for="email_provider" data-show="smtp">
+    <div class="st-grid">
+      <div class="st-f"><label>Mail server</label><input type="text" name="smtp_host" value="{{ cfg.smtp_host or '' }}" placeholder="smtp.gmail.com"></div>
+      <div class="st-f"><label>Port</label><input type="text" name="smtp_port" value="{{ cfg.smtp_port }}"></div>
+      <div class="st-f"><label>Security</label><select name="smtp_security"><option value="starttls" {{ 'selected' if cfg.smtp_security == 'starttls' }}>STARTTLS (587)</option><option value="ssl" {{ 'selected' if cfg.smtp_security == 'ssl' }}>SSL (465)</option><option value="none" {{ 'selected' if cfg.smtp_security == 'none' }}>None</option></select></div>
+      <div class="st-f"><label>Username</label><input type="text" name="smtp_user" value="{{ cfg.smtp_user or '' }}"></div>
+      <div class="st-f"><label>Password</label><input type="password" name="smtp_password" autocomplete="new-password" placeholder="{{ 'saved: type a new one to replace it' if secrets_set.smtp_password else '' }}"><span class="st-saved">For Gmail or Outlook use an app password.</span></div>
+    </div>
+  </div>
+  <div class="st-prov" data-for="email_provider" data-show="brevo">
+    <div class="st-grid"><div class="st-f"><label>Brevo API key</label><input type="password" name="brevo_api_key" autocomplete="new-password" placeholder="{{ 'saved: type a new one to replace it' if secrets_set.brevo_api_key else '' }}"><span class="st-saved">The "from" address must be a verified sender in Brevo.</span></div></div>
+  </div>
+
+  <div style="margin-top:20px;"><button type="submit">Save settings</button></div>
+</form>
+
+<div class="card">
+  <h3 style="margin-top:0;">Send a test</h3>
+  <p class="section-note" style="margin:0 0 8px;">Save your settings first, then try them.</p>
+  <form method="post" action="{{ url_for('msg.test_sms') }}" class="st-test">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="text" name="to" placeholder="Your mobile number" style="max-width:240px;"><button type="submit" class="secondary">Send test text</button>
+  </form>
+  <form method="post" action="{{ url_for('msg.test_email') }}" class="st-test">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="text" name="to" placeholder="Your email address" style="max-width:240px;"><button type="submit" class="secondary">Send test email</button>
+  </form>
+</div>
+
+<script>
+(function(){
+  function sync(){
+    document.querySelectorAll('.st-prov').forEach(function(el){
+      el.classList.toggle('on', document.getElementById(el.getAttribute('data-for')).value === el.getAttribute('data-show'));
+    });
+  }
+  ['sms_provider','email_provider'].forEach(function(id){ document.getElementById(id).addEventListener('change', sync); });
+  sync();
+})();
+</script>
+{% endblock %}

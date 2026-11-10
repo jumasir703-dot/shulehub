@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Lesson plans{% endblock %}
+{% block content %}
+<style>
+  .lp-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .lp-tabs a{padding:7px 14px;border:1.5px solid currentColor;border-radius:999px;text-decoration:none;font-size:.9rem;font-weight:600}
+  .lp-tabs a.on{background:var(--green-900,#103524);border-color:transparent;color:#fff}
+  .lp-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  .lp-bar label{display:flex;flex-direction:column;gap:3px;font-weight:600;font-size:.85rem}
+  .lp-tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:700;background:#e5e7eb;color:#374151}
+  .lp-submitted{background:#fff3cd;color:#664d03}.lp-approved{background:#e3f6ea;color:#1f6b3b}.lp-revise{background:#fde2e7;color:#a02b4a}
+</style>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">{{ 'Lesson plans' if can_mark else 'My lesson plans' }}</h1>
+  <a class="btn" href="{{ url_for('lp.new') }}">Write a lesson plan</a>
+</div>
+<p class="section-note">{% if can_mark %}Mark the plans teachers submit. You can approve a plan or return it with comments.{% else %}Write your plans here, submit them, and see the DOS's score and comments.{% endif %}</p>
+
+<div class="lp-tabs">
+  <a href="{{ url_for('lp.index', teacher=f.teacher) }}" class="{{ 'on' if not f.status }}">All</a>
+  {% for k, label in status.items() %}<a href="{{ url_for('lp.index', status=k, teacher=f.teacher) }}" class="{{ 'on' if f.status == k }}">{{ label }} ({{ counts[k] }})</a>{% endfor %}
+</div>
+
+<form method="get" class="card lp-bar">
+  <input type="hidden" name="status" value="{{ f.status }}">
+  {% if can_mark %}<label>Teacher<select name="teacher"><option value="">Everyone</option>{% for t in teachers %}<option value="{{ t.owner }}" {{ 'selected' if f.teacher == t.owner }}>{{ t.name or t.owner }}</option>{% endfor %}</select></label>{% endif %}
+  <label>Search<input type="text" name="q" value="{{ f.q }}" placeholder="Topic, subject or class"></label>
+  <label>From<input type="date" name="from" value="{{ f.start }}"></label>
+  <label>To<input type="date" name="to" value="{{ f.end }}"></label>
+  <button type="submit">Filter</button>
+  <span style="flex:1"></span>
+  <a class="btn secondary" href="{{ url_for('lp.all_pdf', status=f.status, teacher=f.teacher, q=f.q, **{'from': f.start, 'to': f.end}) }}">Download plans (PDF)</a>
+  <a class="btn secondary" href="{{ url_for('lp.list_csv', status=f.status, teacher=f.teacher, q=f.q, **{'from': f.start, 'to': f.end}) }}">Download list (CSV)</a>
+</form>
+
+<div class="card">
+  {% if plans %}
+  <table style="width:100%;">
+    <thead><tr><th align="left">Date</th>{% if can_mark %}<th align="left">Teacher</th>{% endif %}<th align="left">Subject / class</th><th align="left">Topic</th><th align="left">Status</th><th align="right">Score</th><th></th></tr></thead>
+    <tbody>
+    {% for p in plans %}
+      <tr>
+        <td>{{ p.plan_date }}</td>
+        {% if can_mark %}<td>{{ p.teacher_name or p.owner }}</td>{% endif %}
+        <td>{{ p.subject or '' }}<br><small>{{ p.class_label or '' }}</small></td>
+        <td><a href="{{ url_for('lp.view', plan_id=p.id) }}">{{ p.topic }}</a></td>
+        <td><span class="lp-tag lp-{{ p.status }}">{{ status[p.status] }}</span></td>
+        <td align="right">{% if p.score is not none and p.status in ('approved','revise') %}{{ p.score }}/{{ p.max_score or 10 }}{% endif %}</td>
+        <td align="right"><a href="{{ url_for('lp.pdf', plan_id=p.id) }}">PDF</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="section-note" style="margin:0;">No lesson plans here yet.</p>{% endif %}
+</div>
+{% endblock %}

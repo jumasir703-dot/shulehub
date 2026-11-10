@@ -43,6 +43,15 @@ SERVICES = [
     ("messaging", "Send messages",
      "Send text messages and emails to guardians: exam results, fee balances, meetings and notices. "
      "The gateway settings (SMS and email accounts) stay administrator-only."),
+    ("clearance", "Student clearance",
+     "See which students are cleared by fees and the library, sign students off for other departments, and print clearance forms."),
+    ("lesson_plans", "Write lesson plans",
+     "Teachers: write lesson plans, submit them to the DOS, and see the score and comments. Each teacher sees only their own."),
+    ("lesson_plans_mark", "Mark lesson plans (DOS)",
+     "See every submitted lesson plan, give a score and comments, approve it or return it for revision, and download them."),
+    ("pager", "Send staff alerts",
+     "Send meeting and event alerts to staff (in the app and by SMS), see who has confirmed them, "
+     "and keep staff phone numbers. Everyone with a login can always read the alerts sent to them."),
 ]
 SERVICE_KEYS = [k for k, _, _ in SERVICES]
 SERVICE_LABELS = {k: label for k, label, _ in SERVICES}
@@ -66,6 +75,21 @@ _RESULTS_VIEW = ("exams", "results_publish", "marks_entry")
 _RESULTS_STAFF = ("exams", "results_publish")
 
 _EXACT = {
+    # lesson plans: teachers and markers (review is for markers only)
+    "lp.index": ("lesson_plans", "lesson_plans_mark"),
+    "lp.new": ("lesson_plans", "lesson_plans_mark"),
+    "lp.edit": ("lesson_plans", "lesson_plans_mark"),
+    "lp.save": ("lesson_plans", "lesson_plans_mark"),
+    "lp.view": ("lesson_plans", "lesson_plans_mark"),
+    "lp.submit": ("lesson_plans", "lesson_plans_mark"),
+    "lp.delete": ("lesson_plans", "lesson_plans_mark"),
+    "lp.copy": ("lesson_plans", "lesson_plans_mark"),
+    "lp.pdf": ("lesson_plans", "lesson_plans_mark"),
+    "lp.all_pdf": ("lesson_plans", "lesson_plans_mark"),
+    "lp.list_csv": ("lesson_plans", "lesson_plans_mark"),
+    "lp.review": ("lesson_plans_mark",),
+    # clearance departments and fee rules: administrator only
+    "clearance.settings": (), "clearance.settings_save": (), "clearance.dept_add": (), "clearance.dept_delete": (),
     # timetable viewing
     "view_page": "timetable_view", "export_csv": "timetable_view", "export_pdf": "timetable_view",
     # student records
@@ -99,6 +123,9 @@ _TIMETABLE_EDIT = {
 _REMEDIAL_VIEW = {"remedial.view_page", "remedial.export_csv", "remedial.export_pdf"}
 
 _PREFIXES = (
+    ("pager.", "pager"),
+    ("clearance.", "clearance"),
+    ("attexport.", "attendance"),
     ("master.", "timetable_view"),
     ("analytics.", "exams"),
     ("mymarks.", "marks_entry"),

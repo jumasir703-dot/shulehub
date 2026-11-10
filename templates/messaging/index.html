@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<style>
+  .mg-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start}
+  @media(max-width:860px){.mg-grid{grid-template-columns:1fr}}
+  .mg-field{display:flex;flex-direction:column;gap:4px;margin:12px 0}
+  .mg-field>label,.mg-field>strong{font-weight:600}
+  .mg-field textarea{min-height:150px;width:100%;resize:vertical}
+  .mg-field input[type=text],.mg-field select{width:100%}
+  .mg-checks label{display:inline-flex;align-items:center;gap:6px;margin-right:18px;font-weight:400}
+  .mg-quick{display:flex;flex-wrap:wrap;gap:8px}
+  .mg-quick button{padding:5px 12px;font-size:.85rem}
+  .mg-count{font-size:.85rem;opacity:.8}
+  .mg-warn{padding:10px 14px;border-radius:12px;background:#fff3cd;color:#664d03;margin-bottom:12px}
+  .mg-run{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:.9rem}
+  .mg-run a{text-decoration:none}
+</style>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">Messages</h1>
+  <div style="display:flex;gap:14px;font-size:.9rem;">
+    <a href="{{ url_for('msg.history') }}">History</a>
+    {% if is_admin %}<a href="{{ url_for('msg.settings') }}">Settings</a>{% endif %}
+  </div>
+</div>
+<p class="section-note">Send a text message or email to the guardians of a class, a grade or the whole school.</p>
+
+{% if banner.test_mode %}
+<div class="mg-warn"><strong>Test mode.</strong> Nothing is really sent yet: messages are only simulated.
+  {% if is_admin %}Connect a real text or email account in <a href="{{ url_for('msg.settings') }}">Settings</a>.{% else %}Ask the administrator to connect a text or email account.{% endif %}</div>
+{% endif %}
+
+<div class="mg-grid">
+  <form method="post" action="{{ url_for('msg.preview') }}" class="card" id="mg-form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+    <div class="mg-field">
+      <label for="audience">Send to</label>
+      <select name="audience" id="audience">
+        {% set aud = form.get('audience', 'all') %}
+        <option value="all" {{ 'selected' if aud == 'all' }}>Everyone: guardians of all students</option>
+        {% if grades %}<optgroup label="A whole grade">{% for o in grades %}<option value="{{ o.value }}" {{ 'selected' if aud == o.value }}>{{ o.label }}</option>{% endfor %}</optgroup>{% endif %}
+        {% if classes %}<optgroup label="One class">{% for o in classes %}<option value="{{ o.value }}" {{ 'selected' if aud == o.value }}>{{ o.label }}</option>{% endfor %}</optgroup>{% endif %}
+      </select>
+    </div>
+
+    <div class="mg-field mg-checks">
+      <strong>Send by</strong>
+      <div>
+        <label><input type="checkbox" name="sms" value="1" id="ch-sms" {{ 'checked' if form.get('sms', '1') == '1' }}> Text message (SMS)</label>
+        <label><input type="checkbox" name="email" value="1" id="ch-email" {{ 'checked' if form.get('email') == '1' }}> Email</label>
+      </div>
+      <label style="font-weight:400;margin-top:6px;"><input type="checkbox" name="primary_only" value="1" {{ 'checked' if form.get('primary_only', '1') == '1' }}> Only the main guardian of each student (untick to include every guardian)</label>
+    </div>
+
+    <div class="mg-field">
+      <strong>Quick start</strong>
+      <div class="mg-quick">{% for q in quick %}<button type="button" class="secondary" data-quick="{{ loop.index0 }}">{{ q[0] }}</button>{% endfor %}</div>
+    </div>
+
+    <div class="mg-field" id="subject-box">
+      <label for="subject">Email subject</label>
+      <input type="text" name="subject" id="subject" maxlength="150" value="{{ form.get('subject', '') }}">
+    </div>
+
+    <div class="mg-field">
+      <label for="body">Message</label>
+      <textarea name="body" id="body" maxlength="1500" required>{{ form.get('body', '') }}</textarea>
+      <span class="mg-count" id="mg-count"></span>
+      <span class="section-note" style="margin:0;">You can use <code>{guardian}</code>, <code>{student}</code>, <code>{class}</code> and <code>{school}</code>. Each is replaced for every person.</span>
+    </div>
+
+    <button type="submit">Preview &amp; check</button>
+  </form>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Recent messages</h3>
+    {% for r in recent %}
+    <div class="mg-run">
+      <a href="{{ url_for('msg.run_page', run_id=r.id) }}">{{ r.subject or (r.body[:32] ~ ('…' if r.body|length > 32 else '')) }}</a>
+      <span>{{ r.sent }}/{{ r.total }}{% if r.failed %} · {{ r.failed }} failed{% endif %}</span>
+    </div>
+    {% else %}
+    <p class="section-note" style="margin:0;">Nothing sent yet.</p>
+    {% endfor %}
+    {% if recent %}<p style="margin:10px 0 0;"><a href="{{ url_for('msg.history') }}">See all</a></p>{% endif %}
+  </div>
+</div>
+
+<script>
+(function(){
+  var QUICK = {{ quick|tojson }};
+  var body = document.getElementById('body'), subject = document.getElementById('subject');
+  var count = document.getElementById('mg-count'), sms = document.getElementById('ch-sms'), email = document.getElementById('ch-email');
+  function parts(t){
+    var gsm = /^[\x20-\x7E\n\r£¥èéùìòÇØøÅåÆæßÉÄÖÑÜäöñüà§¿¡]*$/.test(t);
+    var n = t.length, one = gsm ? 160 : 70, multi = gsm ? 153 : 67;
+    return {n:n, p: n === 0 ? 0 : (n <= one ? 1 : Math.ceil(n / multi))};
+  }
+  function update(){
+    var r = parts(body.value);
+    count.textContent = r.n + ' characters' + (sms.checked ? ' · about ' + r.p + ' text message part' + (r.p === 1 ? '' : 's') + ' (names make it longer)' : '');
+    document.getElementById('subject-box').style.display = email.checked ? '' : 'none';
+  }
+  document.querySelectorAll('[data-quick]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var q = QUICK[parseInt(b.getAttribute('data-quick'), 10)];
+      subject.value = q[1]; body.value = q[2]; update(); body.focus();
+    });
+  });
+  [body, sms, email].forEach(function(el){ el.addEventListener('input', update); el.addEventListener('change', update); });
+  update();
+})();
+</script>
+{% endblock %}

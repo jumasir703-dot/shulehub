@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Licence &amp; Check-in{% endblock %}
+{% block content %}
+<h1>Licence &amp; Check-in</h1>
+<div class="card">
+  <h3 style="margin-top:0;">Your licence key</h3>
+  {% if not configured %}
+    <p class="section-note">This copy of ShuleHub is not set up to check in with a supplier, so nothing is ever sent.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('licence.save') }}" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <input type="text" name="key" value="{{ key }}" placeholder="SHUB-XXXX-XXXX-XXXX" maxlength="40" style="min-width:260px; font-family:monospace;">
+    <button type="submit">Save key</button>
+  </form>
+  <p class="section-note">ShuleHub version {{ version }}.</p>
+  {% if notice %}<div class="card" style="margin:10px 0 0;"><strong>Message from your supplier:</strong> {{ notice }}</div>{% endif %}
+</div>
+
+{% if configured %}
+<div class="card">
+  <h3 style="margin-top:0;">Check-in status</h3>
+  <p style="margin:0 0 6px;">{{ last_result or 'No check-in yet.' }}</p>
+  <p class="section-note" style="margin:0;">
+    {% if last_ok %}Last successful check-in: {{ last_ok }}.{% endif %}
+    {% if last_attempt %} Last attempt: {{ last_attempt }}.{% endif %}
+  </p>
+  <form method="post" action="{{ url_for('licence.now') }}" style="margin-top:10px;"><button type="submit" class="secondary">Check in now</button></form>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">What is sent, and what is not</h3>
+  <p>When ShuleHub starts, and every 12 hours while it stays open, it sends one small message to <code>{{ server }}</code>. It contains exactly this:</p>
+  <table class="tt-view-table" style="width:auto; min-width:360px;">
+    <tbody>
+      <tr><th>Licence key</th><td>{{ example.key }}</td></tr>
+      <tr><th>School name</th><td>{{ example.school }}</td></tr>
+      <tr><th>ShuleHub version</th><td>{{ example.version }}</td></tr>
+      <tr><th>Computer type</th><td>{{ example.os }}</td></tr>
+      <tr><th>Install id</th><td>{{ example.install_id[:8] }}… (a random number made on this computer)</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-bottom:0;"><strong>Never sent:</strong> students, guardians, fees, marks, timetables, attendance, messages or any file. If there is no internet, nothing happens and ShuleHub works as normal.</p>
+</div>
+{% endif %}
+{% endblock %}

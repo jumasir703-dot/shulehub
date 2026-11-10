@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Message history{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <h1 style="margin:0;">Message history</h1>
+  <a href="{{ url_for('msg.index') }}">New message</a>
+</div>
+<div class="card" style="margin-top:14px;">
+  {% if runs %}
+  <table style="width:100%;">
+    <thead><tr><th align="left">When</th><th align="left">Message</th><th align="left">By</th><th align="left">Via</th><th align="right">Sent</th><th align="right">Failed</th><th align="right">Waiting</th></tr></thead>
+    <tbody>
+    {% for r in runs %}
+      <tr>
+        <td>{{ r.created_at }}</td>
+        <td><a href="{{ url_for('msg.run_page', run_id=r.id) }}">{{ r.subject or (r.body[:50] ~ ('…' if r.body|length > 50 else '')) }}</a></td>
+        <td>{{ r.created_by }}</td>
+        <td>{{ (r.channels or '').replace('sms', 'Text').replace('email', 'Email').replace(',', ' + ') }}</td>
+        <td align="right">{{ r.sent }}/{{ r.total }}</td><td align="right">{{ r.failed }}</td><td align="right">{{ r.waiting }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="section-note" style="margin:0;">Nothing has been sent yet.</p>{% endif %}
+</div>
+{% endblock %}

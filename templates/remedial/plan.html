@@ -14,26 +14,25 @@
   .rm-need{ font-size:.86rem; color:var(--muted); margin-top:10px; }
   .rm-need.over{ color:var(--danger); font-weight:600; }
 </style>
-<h1>Remedial Timetable <span class="section-note" style="font-weight:400;">· {{ profiles[schedule].label }}</span></h1>
+<h1>Remedial Timetable</h1>
 {% include "remedial/_nav.html" %}
 
 {% if not configured %}
 <div class="card" style="border-left:4px solid var(--gold-500);">
-  <strong>Set up the {{ profiles[schedule].label|lower }} extra hours first.</strong>
-  <a href="{{ url_for('remedial.setup', schedule=schedule) }}">Choose the morning and evening days, start times and session length</a>, then come back here.
+  <strong>Set up the extra hours first.</strong>
+  <a href="{{ url_for('remedial.setup') }}">Choose the days, start time and session length</a>, then come back here.
 </div>
 {% endif %}
 
 <div class="card">
   <p class="section-note" style="margin:0;">
     For each grade, tick the subjects that get remedial sessions, say how many a week, and choose who may teach them.
-    This plan is only for the {{ profiles[schedule].label|lower }} schedule; the other schedule has its own. These teachers are chosen separately from the normal timetable. Every class in the grade follows the same plan.
+    These teachers are chosen separately from the normal timetable. Every class in the grade follows the same plan.
     {% if configured %}Each class has <strong>{{ slots }}</strong> remedial session{{ '' if slots == 1 else 's' }} a week.{% endif %}
   </p>
 </div>
 
 <form method="post" action="{{ url_for('remedial.plan_save') }}">
-  <input type="hidden" name="schedule" value="{{ schedule }}">
   {% for g in grades %}
   <div class="card rm-grade">
     <h3 style="margin-top:0;">{{ g.name }}</h3>
@@ -71,7 +70,7 @@
 
   {% if grades %}
   <button type="submit">Save subjects &amp; teachers</button>
-  <a class="btn secondary" href="{{ url_for('remedial.view_page', schedule=schedule) }}" style="margin-left:8px;">Go to the timetable</a>
+  <a class="btn secondary" href="{{ url_for('remedial.view_page') }}" style="margin-left:8px;">Go to the timetable</a>
   {% endif %}
 </form>
 

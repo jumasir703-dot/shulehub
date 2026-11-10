@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Sending messages{% endblock %}
+{% block content %}
+<style>
+  .rn-bar{height:16px;border-radius:999px;background:rgba(0,0,0,.1);overflow:hidden;margin:10px 0}
+  .rn-bar i{display:block;height:100%;width:0;background:var(--green-900,#103524);transition:width .3s}
+  .rn-nums{display:flex;gap:22px;flex-wrap:wrap}
+  .rn-nums div{display:flex;flex-direction:column}
+  .rn-nums strong{font-size:1.6rem;line-height:1.1}
+</style>
+<h1>{{ run.subject or 'Message' }}</h1>
+<p class="section-note">Started {{ run.created_at }}{% if run.created_by %} by {{ run.created_by }}{% endif %}. Keep this page open while it sends: you can pause and come back later.</p>
+
+<div class="card">
+  <div class="rn-nums">
+    <div><strong id="n-sent">{{ counts.sent }}</strong><span>sent</span></div>
+    <div><strong id="n-wait">{{ counts.queued + counts.sending }}</strong><span>waiting</span></div>
+    <div><strong id="n-failed">{{ counts.failed }}</strong><span>failed</span></div>
+    <div><strong>{{ counts.total }}</strong><span>total</span></div>
+  </div>
+  <div class="rn-bar"><i id="bar"></i></div>
+  <p id="state" class="section-note" style="margin:0 0 10px;"></p>
+  <button type="button" id="toggle" class="secondary">Pause</button>
+  {% if counts.failed or counts.sending %}
+  <form method="post" action="{{ url_for('msg.retry', run_id=run.id) }}" style="display:inline;">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button type="submit">Retry failed</button>
+  </form>
+  {% endif %}
+  <a href="{{ url_for('msg.index') }}" style="margin-left:12px;">New message</a>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">The message</h3>
+  <div style="white-space:pre-wrap;">{{ run.body }}</div>
+</div>
+
+{% if failed %}
+<div class="card">
+  <h3 style="margin-top:0;">Failed ({{ counts.failed }})</h3>
+  <table style="width:100%;">
+    <thead><tr><th align="left">To</th><th align="left">Via</th><th align="left">Why it failed</th></tr></thead>
+    <tbody>{% for f in failed %}<tr><td>{{ f.recipient_name }}<br><small>{{ f.address }}</small></td><td>{{ 'Text' if f.channel == 'sms' else 'Email' }}</td><td>{{ f.error }}</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endif %}
+
+<script>
+(function(){
+  var url = {{ url_for('msg.run_step', run_id=run.id)|tojson }};
+  var tokenEl = document.querySelector('meta[name="csrf-token"]');
+  var token = tokenEl ? tokenEl.content : {{ csrf_token()|tojson }};
+  var paused = false, running = false, last = {{ counts|tojson }};
+  var $ = function(id){ return document.getElementById(id); };
+  function show(c){
+    last = c;
+    $('n-sent').textContent = c.sent; $('n-wait').textContent = c.queued + c.sending; $('n-failed').textContent = c.failed;
+    $('bar').style.width = (c.total ? Math.round(100 * (c.sent + c.failed) / c.total) : 100) + '%';
+    $('state').textContent = c.done ? (c.failed ? 'Finished. Some messages failed: see the list below.' : 'Finished. Everything was sent.')
+                                    : (paused ? 'Paused.' : 'Sending…');
+    $('toggle').style.display = c.done ? 'none' : '';
+  }
+  function step(){
+    if (paused || running || last.done) return;
+    running = true;
+    fetch(url, {method:'POST', credentials:'same-origin', headers:{'X-CSRF-Token': token, 'Accept':'application/json'}})
+      .then(function(r){ if (!r.ok || (r.headers.get('content-type') || '').indexOf('json') < 0) throw new Error('bad reply'); return r.json(); })
+      .then(function(c){ running = false; show(c); if (c.done && c.failed) location.reload(); else step(); })
+      .catch(function(){ running = false; paused = true; $('toggle').textContent = 'Resume'; $('state').textContent = 'Stopped: could not reach ShuleHub or your session expired. Reload the page to continue.'; });
+  }
+  $('toggle').addEventListener('click', function(){
+    paused = !paused; $('toggle').textContent = paused ? 'Resume' : 'Pause'; show(last); step();
+  });
+  show(last); step();
+})();
+</script>
+{% endblock %}

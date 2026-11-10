@@ -1,0 +1,80 @@
+{# Keeps the bell count fresh and shows new alerts as a pop-up. Included once per page by base.html. #}
+<div id="pager-toasts" aria-live="assertive" aria-atomic="false"></div>
+<script>
+(function () {
+  var SUMMARY = "{{ url_for('pager.api_summary') }}";
+  var ACK = "{{ url_for('pager.api_ack', alert_id=0) }}";
+  var INBOX = "{{ url_for('pager.inbox') }}";
+  var box = document.getElementById('pager-toasts');
+  var bell = document.getElementById('pager-bell');
+  var count = document.getElementById('pager-count');
+  var menuCount = document.getElementById('pager-menu-count');
+
+  function setCount(n) {
+    n = n || 0;
+    if (count) { count.textContent = n > 99 ? '99+' : String(n); count.hidden = !n; }
+    if (bell) {
+      bell.classList.toggle('has', n > 0);
+      bell.setAttribute('aria-label', n ? 'Staff alerts, ' + n + ' to confirm' : 'Staff alerts');
+    }
+    if (menuCount) { menuCount.textContent = String(n); menuCount.hidden = !n; }
+  }
+  function token() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : '';
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  }
+  function toast(a) {
+    if (!box) return;
+    var t = el('div', 'pager-toast' + (a.urgent ? ' urgent' : ''));
+    t.setAttribute('role', 'alert');
+    var head = el('div', 'pt-head');
+    head.appendChild(el('span', 'pt-kind', a.kind_label));
+    var x = el('button', 'pt-x', '×');
+    x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
+    x.onclick = function () { t.remove(); };
+    head.appendChild(x);
+    t.appendChild(head);
+    t.appendChild(el('strong', '', a.title));
+    if (a.when) t.appendChild(el('div', 'pt-line', a.when));
+    if (a.venue) t.appendChild(el('div', 'pt-line', 'Venue: ' + a.venue));
+    if (a.sent_by) t.appendChild(el('div', 'pt-by', 'From ' + a.sent_by));
+    var actions = el('div', 'pt-actions');
+    var got = el('button', '', 'Got it');
+    got.type = 'button';
+    got.onclick = function () {
+      got.disabled = true;
+      fetch(ACK.replace(/0$/, String(a.id)), {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'X-CSRF-Token': token(), 'Accept': 'application/json' }
+      }).then(function (r) { return r.json(); })
+        .then(function (d) { setCount(d.unread); t.remove(); })
+        .catch(function () { got.disabled = false; });
+    };
+    var open = el('a', 'btn secondary', 'Open');
+    open.href = INBOX;
+    actions.appendChild(got); actions.appendChild(open);
+    t.appendChild(actions);
+    box.appendChild(t);
+  }
+  function poll() {
+    if (document.hidden) return;
+    fetch(SUMMARY, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (r) {
+        var ct = r.headers.get('content-type') || '';
+        if (!r.ok || ct.indexOf('json') < 0) throw new Error('not json');
+        return r.json();
+      })
+      .then(function (d) { setCount(d.unread); (d.alerts || []).forEach(toast); })
+      .catch(function () { /* offline or signed out: stay quiet */ });
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) poll(); });
+  setInterval(poll, 45000);
+  poll();
+})();
+</script>

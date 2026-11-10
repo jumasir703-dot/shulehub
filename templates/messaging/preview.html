@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Check before sending{% endblock %}
+{% block content %}
+<h1>Check before sending</h1>
+
+{% if banner.test_mode %}
+<div class="card" style="background:#fff3cd;color:#664d03;"><strong>Test mode.</strong> Nothing will really be sent: messages are only simulated.</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Who will receive it</h3>
+  <p style="margin:0 0 8px;">
+    {% if per_channel.get('sms') is not none and 'sms' in per_channel %}<strong>{{ per_channel['sms'] }}</strong> text message{{ '' if per_channel['sms'] == 1 else 's' }}{% if sms_parts %} (about {{ sms_parts }} part{{ '' if sms_parts == 1 else 's' }} in total){% endif %}{% endif %}
+    {% if 'sms' in per_channel and 'email' in per_channel %} and {% endif %}
+    {% if 'email' in per_channel %}<strong>{{ per_channel['email'] }}</strong> email{{ '' if per_channel['email'] == 1 else 's' }}{% endif %}
+  </p>
+  {% if dupes %}<p class="section-note" style="margin:0 0 8px;">{{ dupes }} repeat{{ '' if dupes == 1 else 's' }} left out, so a parent with several children gets this notice once.</p>{% endif %}
+  {% if too_many %}<p style="color:#a02b4a;"><strong>That is more than {{ max_per_run }} messages.</strong> Go back and choose a smaller group.</p>{% endif %}
+
+  <h3>What they will see</h3>
+  <p class="section-note" style="margin:0 0 6px;">Example for {{ sample.guardian }} ({{ sample.student }}):</p>
+  {% if 'email' in per_channel and sample_subject %}<p style="margin:0;"><strong>Subject:</strong> {{ sample_subject }}</p>{% endif %}
+  <div style="white-space:pre-wrap;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,.05);">{{ sample_text }}</div>
+</div>
+
+{% if skipped %}
+<div class="card">
+  <h3 style="margin-top:0;">{{ skipped|length }} left out (no contact to use)</h3>
+  <ul style="margin:0;padding-left:20px;">
+    {% for s in skipped[:15] %}<li>{{ s[0] }}: {{ s[1] }}</li>{% endfor %}
+  </ul>
+  {% if skipped|length > 15 %}<p class="section-note" style="margin:6px 0 0;">…and {{ skipped|length - 15 }} more. Add their guardian details on the Students page.</p>{% endif %}
+</div>
+{% endif %}
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+  {% if not too_many %}
+  <form method="post" action="{{ url_for('msg.send') }}" onsubmit="return confirm('Send {{ items|length }} message{{ '' if items|length == 1 else 's' }} now?');">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="audience" value="{{ m.audience }}">
+    {% for c in m.channels %}<input type="hidden" name="{{ c }}" value="1">{% endfor %}
+    {% if m.primary_only %}<input type="hidden" name="primary_only" value="1">{% endif %}
+    <input type="hidden" name="subject" value="{{ m.subject }}">
+    <input type="hidden" name="body" value="{{ m.body }}">
+    <button type="submit">Send {{ items|length }} message{{ '' if items|length == 1 else 's' }}</button>
+  </form>
+  {% endif %}
+  <form method="get" action="{{ url_for('msg.index') }}">
+    <input type="hidden" name="audience" value="{{ m.audience }}">
+    {% for c in m.channels %}<input type="hidden" name="{{ c }}" value="1">{% endfor %}
+    {% if m.primary_only %}<input type="hidden" name="primary_only" value="1">{% endif %}
+    <input type="hidden" name="subject" value="{{ m.subject }}">
+    <input type="hidden" name="body" value="{{ m.body }}">
+    <button type="submit" class="secondary">Back to edit</button>
+  </form>
+</div>
+{% endblock %}

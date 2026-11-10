@@ -1,0 +1,14 @@
+{# Header school picker: only shown to people who can work in more than one school. #}
+<form method="post" action="{{ url_for('schools.switch') }}" class="sch-switch" aria-label="Switch school">
+  <label for="sch-pick">School</label>
+  <select id="sch-pick" name="school_id" onchange="this.form.submit()">
+    {% for sc in school_choices %}<option value="{{ sc.id }}" {{ 'selected' if sc.id == current_school_id }}>{{ school_display_name(sc.id) }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="secondary">Go</button></noscript>
+</form>
+<style>
+  .sch-switch{ display:flex; align-items:center; gap:6px; margin:0 8px 0 auto; }
+  .sch-switch label{ margin:0; font-size:.74rem; color:var(--muted); }
+  .sch-switch select{ width:auto; max-width:200px; padding:6px 8px; font-size:.84rem; }
+  @media (max-width:640px){ .sch-switch label{ display:none; } .sch-switch select{ max-width:130px; } }
+</style>

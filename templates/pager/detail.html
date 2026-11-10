@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ a.title }}{% endblock %}
+{% block content %}
+{% include "pager/_style.html" %}
+<h1>Staff Alerts</h1>
+{% include "pager/_nav.html" %}
+
+<div class="card pg-alert {{ 'urgent' if a.urgent }}">
+  <span class="pg-kind {{ a.kind }}">{{ a.kind_label }}</span>
+  {% if a.withdrawn %}<span class="badge">withdrawn</span>{% endif %}
+  <h3>{{ a.title }}</h3>
+  {% if a.when %}<div class="pg-when">{{ a.when }}</div>{% endif %}
+  {% if a.venue %}<div class="pg-meta">Venue: {{ a.venue }}</div>{% endif %}
+  {% if a.body %}<p class="pg-body">{{ a.body }}</p>{% endif %}
+  <div class="pg-meta" style="margin-top:8px;">Sent by {{ a.sent_by }} · {{ a.sent_at }} · to {{ a.audience }}</div>
+
+  <div class="pg-stats">
+    <div class="pg-stat"><strong>{{ stats.confirmed }} / {{ stats.total }}</strong><span>confirmed “Got it”</span></div>
+    <div class="pg-stat"><strong>{{ stats.seen }}</strong><span>seen, not confirmed</span></div>
+    <div class="pg-stat {{ 'bad' if stats.waiting }}"><strong>{{ stats.waiting }}</strong><span>not opened yet</span></div>
+    {% if a.sms_requested %}
+    <div class="pg-stat"><strong>{{ stats.sms_sent }}</strong><span>SMS sent</span></div>
+    <div class="pg-stat {{ 'bad' if stats.sms_failed or stats.sms_none }}"><strong>{{ stats.sms_failed + stats.sms_none }}</strong><span>SMS not delivered</span></div>
+    {% endif %}
+  </div>
+
+  <div class="pg-actions">
+    {% if a.sms_requested and (stats.sms_failed or stats.sms_none) and not a.withdrawn and sms.configured %}
+    <form method="post" action="{{ url_for('pager.retry_sms', alert_id=a.id) }}" class="pg-inline"><button type="submit" class="secondary">Resend the SMS that didn&rsquo;t go through</button></form>
+    {% endif %}
+    {% if not a.withdrawn %}
+    <form method="post" action="{{ url_for('pager.withdraw', alert_id=a.id) }}" class="pg-inline" onsubmit="return confirm('Withdraw this alert? It will disappear from everyone’s alerts. SMS already sent can’t be recalled.');"><button type="submit" class="secondary">Withdraw alert</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Who has seen it</h3>
+  <div class="pg-wrap">
+  <table class="pg-table">
+    <thead><tr><th>Person</th><th>In ShuleHub</th>{% if a.sms_requested %}<th>SMS</th>{% endif %}</tr></thead>
+    <tbody>
+      {% for p in people %}
+      <tr>
+        <td>{{ p.name }} <span class="pg-meta">· {{ p.role_name }}</span></td>
+        <td>
+          {% if p.state == 'confirmed' %}<span class="badge ok">Confirmed {{ p.at }}</span>
+          {% elif p.state == 'seen' %}<span class="badge warn">Seen {{ p.at }}</span>
+          {% else %}<span class="badge">Not opened</span>{% endif %}
+        </td>
+        {% if a.sms_requested %}
+        <td>
+          {% if p.sms_status == 'sent' %}<span class="badge ok">Sent</span>{% if p.sms_detail and p.sms_detail != 'Sent' %} <span class="pg-meta">{{ p.sms_detail }}</span>{% endif %}
+          {% elif p.sms_status == 'failed' %}<span class="badge" style="background:var(--danger-bg); color:var(--danger);">Failed</span> <span class="pg-meta">{{ p.sms_detail }}</span>
+          {% elif p.sms_status == 'no_number' %}<span class="badge warn">No phone number</span>
+          {% else %}<span class="pg-meta">-</span>{% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% if a.sms_requested %}
+<div class="card">
+  <h3 style="margin-top:0;">The SMS text</h3>
+  <div class="pg-sms">{{ sms_text }}</div>
+</div>
+{% endif %}
+{% endblock %}

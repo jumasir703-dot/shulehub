@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Edit school{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('schools.index') }}">← Our schools</a>
+<h1>Edit {{ settings.name }}</h1>
+<form method="post" class="card">
+  <input type="hidden" name="action" value="save">
+  <div class="form-row" style="margin-top:0;">
+    <div style="flex:2;"><label>School name</label><input type="text" name="name" value="{{ settings.name }}" maxlength="120" required></div>
+    <div style="flex:2;"><label>Tagline</label><input type="text" name="tagline" value="{{ settings.tagline }}" maxlength="120"></div>
+    <div><label>Level</label>
+      <select name="level">
+        {% if s.level == 'mixed' %}<option value="mixed" selected>Mixed levels (original school)</option>{% endif %}
+        {% for key, info in levels.items() %}<option value="{{ key }}" {{ 'selected' if s.level == key }}>{{ info[0] }} ({{ info[1] }})</option>{% endfor %}
+      </select></div>
+  </div>
+  <label style="display:flex; gap:8px; align-items:center; margin-top:14px; font-size:.9rem; color:var(--ink);">
+    <input type="checkbox" name="add_grades" value="1" style="width:auto;"> Also add any standard grades and subjects for this level that are missing (nothing is changed or removed)</label>
+  <button type="submit" style="margin-top:14px;">Save</button>
+</form>
+{% if s.id != 1 %}
+<form method="post" class="card" onsubmit="return confirm('{{ 'Archive this school? Its records are kept and you can restore it.' if s.active else 'Restore this school?' }}');">
+  <h3 style="margin-top:0;">{{ 'Archive' if s.active else 'Restore' }} this school</h3>
+  <p class="section-note">{{ 'Archived schools disappear from the switcher and the group totals. Nothing is deleted.' if s.active else 'It will appear again in the switcher and the group totals.' }}</p>
+  <input type="hidden" name="action" value="{{ 'archive' if s.active else 'restore' }}">
+  <button type="submit" class="secondary" style="margin-top:8px;">{{ 'Archive school' if s.active else 'Restore school' }}</button>
+</form>
+{% endif %}
+{% endblock %}

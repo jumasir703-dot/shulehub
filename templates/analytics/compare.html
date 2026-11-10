@@ -26,6 +26,7 @@
     <strong class="{{ 'up' if (result.grade_mean_b - result.grade_mean_a) > 0 else 'down' }}">{{ (result.grade_mean_b - result.grade_mean_a)|round(2)|signed }}</strong></div>
 </div>
 
+{% include "charts/_compare.html" %}
 <div class="card">
   <h3>Subject movement</h3>
   <table>

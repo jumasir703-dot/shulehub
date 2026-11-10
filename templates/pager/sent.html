@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Sent alerts{% endblock %}
+{% block content %}
+{% include "pager/_style.html" %}
+<h1>Staff Alerts</h1>
+{% include "pager/_nav.html" %}
+
+{% if items %}
+<div class="card">
+  <div class="pg-wrap">
+  <table class="pg-table">
+    <thead><tr><th>Alert</th><th>Sent to</th><th>Confirmed</th><th>SMS</th><th>Sent</th></tr></thead>
+    <tbody>
+      {% for a in items %}
+      <tr>
+        <td>
+          <span class="pg-kind {{ a.kind }}">{{ a.kind_label }}</span>
+          <a href="{{ url_for('pager.detail', alert_id=a.id) }}" style="margin-left:6px; {{ 'text-decoration:line-through;' if a.withdrawn }}"><strong>{{ a.title }}</strong></a>
+          {% if a.withdrawn %}<span class="badge">withdrawn</span>{% endif %}
+          {% if a.when %}<div class="pg-meta">{{ a.when }}{% if a.venue %} · {{ a.venue }}{% endif %}</div>{% endif %}
+        </td>
+        <td>{{ a.total }} <span class="pg-meta">({{ a.audience }})</span></td>
+        <td>{{ a.confirmed }} / {{ a.total }}</td>
+        <td>{% if a.sms_requested %}{{ a.sms_sent }} sent{% if a.sms_failed %}, <span style="color:var(--danger); font-weight:600;">{{ a.sms_failed }} failed</span>{% endif %}{% else %}<span class="pg-meta">app only</span>{% endif %}</td>
+        <td class="pg-meta">{{ a.sent_at }}<br>{{ a.sent_by }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% else %}
+<div class="card"><p class="section-note" style="margin:0;">Nothing has been sent yet. <a href="{{ url_for('pager.compose') }}">Send the first alert.</a></p></div>
+{% endif %}
+{% endblock %}

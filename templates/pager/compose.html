@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Send an alert{% endblock %}
+{% block content %}
+{% include "pager/_style.html" %}
+<h1>Staff Alerts</h1>
+{% include "pager/_nav.html" %}
+
+<form method="post" action="{{ url_for('pager.send') }}" id="pg-form" class="card">
+  <div class="form-row" style="margin-top:0;">
+    <div style="flex:0 0 190px;">
+      <label>What is it?</label>
+      <select name="kind" id="pg-kind">
+        {% for key, label in kinds.items() %}
+        <option value="{{ key }}" {{ 'selected' if v.get('kind', 'meeting') == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:3;">
+      <label>Title</label>
+      <input type="text" name="title" id="pg-title" maxlength="120" required value="{{ v.get('title', '') }}" placeholder="e.g. Staff meeting">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div><label>Date <span class="section-note" style="display:inline;">(optional)</span></label><input type="date" name="event_date" id="pg-date" value="{{ v.get('event_date', '') }}"></div>
+    <div><label>Time <span class="section-note" style="display:inline;">(optional)</span></label><input type="time" name="event_time" id="pg-time" value="{{ v.get('event_time', '') }}"></div>
+    <div style="flex:2;"><label>Venue <span class="section-note" style="display:inline;">(optional)</span></label><input type="text" name="venue" id="pg-venue" maxlength="100" value="{{ v.get('venue', '') }}" placeholder="e.g. Staff room"></div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <label>More details <span class="section-note" style="display:inline;">(optional)</span></label>
+    <textarea name="body" id="pg-body" class="pg-text" maxlength="1000" placeholder="Agenda, what to bring, anything people should know">{{ v.get('body', '') }}</textarea>
+  </div>
+
+  <h3 style="margin:22px 0 4px;">Who should get it?</h3>
+  <div class="pg-checks">
+    <label><input type="checkbox" name="everyone" id="pg-everyone" value="1" {{ 'checked' if v.get('everyone') }}> <strong>Everyone</strong> (all staff with a login, except me)</label>
+    {% for r in roles %}
+    <label><input type="checkbox" class="pg-role" name="roles" value="{{ r.key }}" {{ 'checked' if r.key in picked_roles }}> {{ r.name }} <small class="section-note">({{ r.count }})</small></label>
+    {% endfor %}
+  </div>
+  <details style="margin-top:10px;" {{ 'open' if picked }}>
+    <summary style="cursor:pointer; font-size:.9rem;">Or pick people by name</summary>
+    <div class="pg-people">
+      {% for s in staff %}
+      <label><input type="checkbox" class="pg-person" name="people" value="{{ s.id }}" data-role="{{ s.role }}" data-phone="{{ 1 if s.phone_ok else 0 }}" {{ 'checked' if s.id in picked }}>
+        {{ s.name }} <small>· {{ s.role_name }}{% if not s.phone_ok %} · no phone{% endif %}</small></label>
+      {% endfor %}
+    </div>
+  </details>
+
+  <h3 style="margin:22px 0 4px;">How should it reach them?</h3>
+  <p class="section-note" style="margin:0 0 6px;">Everyone you choose always gets it in ShuleHub (bell and pop-up).</p>
+  {% if sms.configured %}
+    <label style="display:inline-flex; align-items:center; gap:8px; color:var(--ink);">
+      <input type="checkbox" name="send_sms" id="pg-sms" value="1" {{ 'checked' if v.get('send_sms') }}> Also send by SMS
+      {% if sms.test_mode %}<span class="badge warn">test mode: nothing is really sent</span>{% elif sms.sandbox %}<span class="badge warn">Africa's Talking sandbox</span>{% endif %}
+    </label>
+    <div id="pg-sms-box" style="margin-top:10px;" hidden>
+      <div class="section-note" style="margin:0 0 4px;">The SMS people will get:</div>
+      <div class="pg-sms" id="pg-sms-preview"></div>
+      <div class="section-note" id="pg-sms-count"></div>
+    </div>
+  {% else %}
+    <div class="card pg-note-warn" style="padding:12px 14px; margin:0;">
+      <strong>SMS isn't connected yet.</strong>
+      <span class="section-note">Alerts will go out in ShuleHub only. See <a href="{{ url_for('pager.contacts') }}">Phone numbers &amp; SMS</a> to switch SMS on.</span>
+    </div>
+  {% endif %}
+
+  <p class="section-note" id="pg-reach" style="margin-top:18px; font-weight:600; color:var(--green-900);"></p>
+  <button type="submit" id="pg-send">Send alert</button>
+</form>
+
+<script>
+(function () {
+  var SCHOOL = {{ school_name|tojson }};
+  var ME = {{ me }};
+  var KINDS = {{ kinds|tojson }};
+  var MAX = {{ sms_max }};
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var $ = function (id) { return document.getElementById(id); };
+  var persons = Array.prototype.slice.call(document.querySelectorAll('.pg-person'));
+  var roleBoxes = Array.prototype.slice.call(document.querySelectorAll('.pg-role'));
+  var everyone = $('pg-everyone'), sms = $('pg-sms');
+
+  function recipients() {
+    var ids = {}, phones = 0, n = 0;
+    var roles = roleBoxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
+    persons.forEach(function (p) {
+      var id = parseInt(p.value, 10);
+      var by = (everyone.checked || roles.indexOf(p.dataset.role) >= 0) && id !== ME;
+      if (by || p.checked) { ids[id] = true; }
+    });
+    persons.forEach(function (p) {
+      if (ids[parseInt(p.value, 10)]) { n++; if (p.dataset.phone === '1') phones++; }
+    });
+    return { n: n, phones: phones };
+  }
+  function niceDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return '';
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  function smsText() {
+    var title = $('pg-title').value.trim().slice(0, 120);
+    var venue = $('pg-venue').value.trim().slice(0, 100);
+    var body = $('pg-body').value.trim().slice(0, 1000).split(/\s+/).filter(Boolean).join(' ');
+    var head = SCHOOL + ' - ' + (KINDS[$('pg-kind').value] || 'Notice') + ': ' + title;
+    var when = [niceDate($('pg-date').value), $('pg-time').value].filter(Boolean).join(' ');
+    var bits = [];
+    if (when) bits.push(when);
+    if (venue) bits.push('Venue: ' + venue);
+    if (body) bits.push(body);
+    return (head + (bits.length ? '. ' + bits.join('. ') : '')).slice(0, MAX);
+  }
+  function refresh() {
+    var r = recipients();
+    var line = r.n ? 'This will reach ' + r.n + (r.n === 1 ? ' person' : ' people') + ' in ShuleHub' : 'Choose who should get it.';
+    if (sms && sms.checked && r.n) {
+      line += ' and ' + r.phones + ' by SMS';
+      if (r.phones < r.n) line += ' (' + (r.n - r.phones) + ' without a phone number won’t get the SMS)';
+    }
+    $('pg-reach').textContent = line + (r.n ? '.' : '');
+    if (sms) {
+      $('pg-sms-box').hidden = !sms.checked;
+      if (sms.checked) {
+        var t = smsText();
+        $('pg-sms-preview').textContent = t;
+        var parts = Math.max(1, Math.ceil(t.length / 160));
+        $('pg-sms-count').textContent = t.length + ' characters · about ' + parts + ' SMS part' + (parts === 1 ? '' : 's') + ' per person';
+      }
+    }
+  }
+  document.getElementById('pg-form').addEventListener('input', refresh);
+  document.getElementById('pg-form').addEventListener('change', refresh);
+  document.getElementById('pg-form').addEventListener('submit', function (e) {
+    var r = recipients();
+    if (sms && sms.checked && r.phones > 0 &&
+        !window.confirm('Send this as an SMS to ' + r.phones + (r.phones === 1 ? ' person' : ' people') + '? SMS messages cost money and can’t be recalled.')) {
+      e.preventDefault(); return;
+    }
+    $('pg-send').disabled = true;
+  });
+  refresh();
+})();
+</script>
+{% endblock %}

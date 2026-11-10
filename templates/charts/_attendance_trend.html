@@ -1,0 +1,2 @@
+{% set c_trend = chart_attendance_trend(cls, start, end) %}
+{% if c_trend %}<div class="card"><h3>{{ cls.label }}: daily attendance</h3>{{ c_trend }}</div>{% endif %}

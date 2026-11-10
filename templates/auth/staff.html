@@ -33,7 +33,8 @@
     {% for u in users %}
       <tr>
         <td>{{ u.full_name }}{% if u.id == user.id %} <span class="badge ok">you</span>{% endif %}
-          <form id="upd{{ u.id }}" method="post" action="{{ url_for('auth.staff_update', user_id=u.id) }}"></form></td>
+          <form id="upd{{ u.id }}" method="post" action="{{ url_for('auth.staff_update', user_id=u.id) }}"></form>
+      {% if u.id != user.id %}<form method="post" action="{{ url_for('auth.staff_delete', user_id=u.id) }}" style="display:inline;" onsubmit="return confirm('Delete the login for ' + {{ u.full_name|tojson }} + '? This cannot be undone. Their teacher record and work are kept.');"><button type="submit" class="secondary">Delete</button></form>{% endif %}</td>
         <td>{{ u.username }}</td>
         <td><select form="upd{{ u.id }}" name="role" style="min-width:120px;">{% for k, label in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if k == u.role }}>{{ label }}</option>{% endfor %}</select></td>
         <td><select form="upd{{ u.id }}" name="teacher_id" style="min-width:140px;"><option value="">—</option>{% for t in teachers %}<option value="{{ t.id }}" {{ 'selected' if t.name == u.teacher_name }}>{{ t.name }}</option>{% endfor %}</select></td>

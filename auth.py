@@ -45,10 +45,10 @@ SESSION_HOURS = 12
 # ---------------------------------------------------------------- policy
 # Endpoints anyone can open without logging in. "logo_image" is the school
 # logo, which also appears on the sign-in page.
-PUBLIC = {"auth.login", "auth.setup", "offline_page", "guide_page", "get_app_page", "static", "logo_image"}
+PUBLIC = {"themes.css", "auth.login", "auth.setup", "offline_page", "guide_page", "get_app_page", "static", "logo_image"}
 
 # Endpoints every logged-in user can open.
-COMMON = {"home", "auth.logout", "auth.account", "auth.account_password",
+COMMON = {"home", "dashboard.index", "search.index", "search.suggest", "library.catalogue", "library.book_detail", "auth.logout", "auth.account", "auth.account_password",
           # "View example": every signed-in role may look at the sample school
           "demo.index", "demo.start", "demo.exit_demo"}
 
@@ -387,6 +387,22 @@ def staff_password(user_id):
     elif db.fetch_one("SELECT id FROM users WHERE id=?", (user_id,)):
         db.execute("UPDATE users SET password_hash=? WHERE id=?", (generate_password_hash(pw), user_id))
         flash("Password reset. Ask them to change it from My Account after logging in.", "success")
+    return redirect(url_for("auth.staff"))
+
+
+@auth_bp.route("/staff/<int:user_id>/delete", methods=["POST"])
+def staff_delete(user_id):
+    row = db.fetch_one("SELECT id, username, full_name, role, active FROM users WHERE id=?", (user_id,))
+    if not row:
+        flash("That login no longer exists.", "error")
+    elif user_id == g.user["id"]:
+        flash("You can't delete your own login.", "error")
+    elif row["role"] == "admin" and row["active"] and _admin_count(exclude_id=user_id) == 0:
+        flash("There must always be at least one active administrator, so this login can't be deleted.", "error")
+    else:
+        db.execute("DELETE FROM users WHERE id=?", (user_id,))
+        flash(f"The login for {row['full_name'] or row['username']} was deleted. "
+              "Their teacher record and the work they entered are kept.", "success")
     return redirect(url_for("auth.staff"))
 
 

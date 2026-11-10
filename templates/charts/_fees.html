@@ -1,0 +1,8 @@
+{% set c_grades = chart_fees_grades(by_grade) %}
+{% set c_months = chart_fees_months() %}
+{% if c_grades or c_months %}
+<div class="grid-even" style="margin-bottom:18px;">
+  {% if c_months %}<div class="card"><h3>Collected per month</h3>{{ c_months }}</div>{% endif %}
+  {% if c_grades %}<div class="card"><h3>Collected and owing, by grade</h3>{{ c_grades }}</div>{% endif %}
+</div>
+{% endif %}

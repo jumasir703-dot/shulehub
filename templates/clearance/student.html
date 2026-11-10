@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Clearance: {{ p.student.name }}{% endblock %}
+{% block content %}
+<style>.cl-tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:700}.cl-ok{background:#e3f6ea;color:#1f6b3b}.cl-no{background:#fde2e7;color:#a02b4a}</style>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <div><h1 style="margin:0;">{{ p.student.name }}</h1>
+  <p class="section-note" style="margin:4px 0 0;">Adm. {{ p.student.admission_no }} · {{ p['class'] }}</p></div>
+  <a href="{{ url_for('clearance.index') }}">Back to the list</a>
+</div>
+
+<div class="card" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+  <div style="font-size:1.2rem;">{% if p.cleared %}<span class="cl-tag cl-ok">CLEARED</span> All departments have cleared this student.{% else %}<span class="cl-tag cl-no">NOT CLEARED</span> Outstanding: {{ p.pending|join('; ') }}{% endif %}</div>
+  <form method="get" action="{{ url_for('clearance.form_pdf', student_id=p.student.id) }}" style="display:flex;gap:8px;align-items:center;">
+    <select name="purpose">{% for x in purposes %}<option {{ 'selected' if purpose == x }}>{{ x }}</option>{% endfor %}</select>
+    <button type="submit">Download form (PDF)</button>
+  </form>
+</div>
+
+<div class="card">
+  <table style="width:100%;">
+    <thead><tr><th align="left">Department</th><th align="left">Status</th><th align="left">Details</th><th align="left">Sign-off</th></tr></thead>
+    <tbody>
+    {% for i in p['items'] %}
+    <tr>
+      <td><strong>{{ i.name }}</strong>{% if i.auto %}<br><small>checked automatically</small>{% endif %}</td>
+      <td>{% if i.cleared %}<span class="cl-tag cl-ok">CLEARED</span>{% else %}<span class="cl-tag cl-no">NOT CLEARED</span>{% endif %}</td>
+      <td>{{ i.detail }}{% if i.get('by') %}<br><small>by {{ i.by }}</small>{% endif %}</td>
+      <td>
+        {% if not i.auto %}
+        <form method="post" action="{{ url_for('clearance.sign', student_id=p.student.id) }}" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="dept_id" value="{{ i.dept_id }}">
+          {% if i.cleared %}<input type="hidden" name="action" value="unsign"><button type="submit" class="secondary">Undo</button>
+          {% else %}<input type="text" name="note" placeholder="Note (optional)" style="max-width:170px;"><button type="submit">Clear</button>{% endif %}
+        </form>
+        {% elif i.key == 'fees' %}<a href="{{ url_for('fees.student', student_id=p.student.id) }}">Open fees</a>
+        {% elif i.key == 'library' %}<a href="{{ url_for('library.borrower', kind='s', borrower_id=p.student.id) }}">Open library</a>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

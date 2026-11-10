@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block content %}<p><a href="{{ url_for('schools') }}">← Schools</a></p>
+<h1>{{ lic.school }} {% if not lic.active %}<span class="tag bad">disabled</span>{% endif %}</h1>
+<div class="card"><p>Licence key: <span class="copy">{{ lic.key }}</span> · created {{ lic.created_at|local }}</p>
+<form method="post" action="{{ url_for('school_update', lid=lic.id) }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<div class="two"><div><label>School name</label><input name="school" value="{{ lic.school }}"></div><div><label>Contact</label><input name="contact" value="{{ lic.contact or '' }}"></div></div>
+<label>Note</label><input name="note" value="{{ lic.note or '' }}">
+<label>Message shown to this school on their Licence page (e.g. “Version 1.2 is ready, contact us”)</label><input name="notice" value="{{ lic.notice or '' }}">
+<p><button>Save</button></p></form>
+<form method="post" action="{{ url_for('school_toggle', lid=lic.id) }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="s">{{ 'Disable key' if lic.active else 'Enable key' }}</button>
+<span class="muted"> A disabled key only changes what the check-in reports; ShuleHub itself keeps working.</span></form></div>
+<div class="card"><h2>Computers using this key ({{ machines|length }})</h2><table><tr><th>Install</th><th>System</th><th>Version</th><th>First</th><th>Last</th><th>Check-ins</th></tr>
+{% for m in machines %}<tr><td class="copy">{{ m.install_id[:8] }}</td><td>{{ m.os }}</td><td>{{ m.version }}</td><td>{{ m.first|local }}</td><td>{{ m.last|local }}</td><td>{{ m.n }}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">Never checked in yet.</td></tr>{% endfor %}</table>
+{% if machines|length > 1 %}<p class="muted">More than one computer: either the school installed it on several computers, or the key was shared.</p>{% endif %}</div>
+<div class="card"><h2>Latest check-ins</h2><table><tr><th>When</th><th>Name reported</th><th>Version</th><th>From</th></tr>
+{% for p in pings %}<tr><td>{{ p.at|local }}</td><td>{{ p.school_reported }}</td><td>{{ p.version }}</td><td class="muted">{{ p.ip }}</td></tr>{% endfor %}</table></div>{% endblock %}

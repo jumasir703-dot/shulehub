@@ -41,18 +41,8 @@ if errorlevel 1 (
 %PY% --version
 %PY% --version >> "%LOG%" 2>&1
 
-REM ---- 1b. wire in add-on modules (Master Timetable). Safe to repeat. ----
-if exist "apply_master_timetable.py" (
-  echo Updating main files with the Master Timetable module...
-  %PY% apply_master_timetable.py >> "%LOG%" 2>&1
-  if errorlevel 1 (
-    echo.
-    echo ERROR: Could not wire in the Master Timetable. Details:
-    powershell -NoProfile -Command "Get-Content -LiteralPath '%LOG%' -Tail 12"
-    pause
-    exit /b 1
-  )
-)
+REM ---- 1b. (removed) The Master Timetable is already wired into app.py and the menu,
+REM      so the old apply_master_timetable.py step is no longer needed.
 
 REM ---- 2. clean virtual environment ----
 echo [2/4] Preparing a clean environment...

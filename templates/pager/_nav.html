@@ -1,0 +1,8 @@
+<nav class="subnav no-print">
+  <a href="{{ url_for('pager.inbox') }}" class="{{ 'active' if request.endpoint == 'pager.inbox' }}">My alerts</a>
+  {% if can('pager') %}
+  <a href="{{ url_for('pager.compose') }}" class="{{ 'active' if request.endpoint in ('pager.compose', 'pager.send') }}">Send an alert</a>
+  <a href="{{ url_for('pager.sent') }}" class="{{ 'active' if request.endpoint in ('pager.sent', 'pager.detail') }}">Sent alerts</a>
+  <a href="{{ url_for('pager.contacts') }}" class="{{ 'active' if request.endpoint == 'pager.contacts' }}">Phone numbers &amp; SMS</a>
+  {% endif %}
+</nav>

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Theme & Colours{% endblock %}
+{% block content %}
+<style>
+  .th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:12px 0}
+  .th-opt{position:relative;cursor:pointer;display:block;padding:12px;border:2px solid var(--line,#ddd);border-radius:16px;background:#fff}
+  .th-opt input{position:absolute;opacity:0}
+  .th-opt:has(input:checked){border-color:var(--green-900,#103524);box-shadow:0 0 0 3px rgba(0,0,0,.08)}
+  .th-swatch{display:flex;height:34px;border-radius:10px;overflow:hidden;margin-bottom:8px}
+  .th-swatch i{flex:1}
+  .th-opt strong{display:block}
+  .th-opt span.s{font-size:.8rem;opacity:.7}
+  .th-row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-end;margin:10px 0}
+  .th-row label{display:flex;flex-direction:column;gap:4px;font-weight:600}
+  .th-row input[type=color]{width:70px;height:42px;padding:2px;border-radius:10px;cursor:pointer}
+  .th-styles label{display:block;margin:6px 0;font-weight:400}
+  .th-preview{border-radius:18px;overflow:hidden;border:1px solid rgba(0,0,0,.1);margin-top:10px;background:#f4f6fb}
+  .pv-bar{padding:12px 16px;color:#fff;display:flex;justify-content:space-between;align-items:center;font-weight:700}
+  .pv-body{padding:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .pv-card{padding:12px 16px;border-radius:14px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+  .pv-btn{border:0;border-radius:999px;padding:8px 18px;color:#fff;font-weight:600}
+  .pv-chip{padding:3px 10px;border-radius:999px;font-size:.8rem}
+</style>
+
+<h1>Theme &amp; Colours</h1>
+<p class="section-note">Choose how ShuleHub looks for everyone at your school. Pick a ready-made theme, or set your own colours (for example your school colours).</p>
+
+<form method="post" action="{{ url_for('themes.save') }}" class="card" id="theme-form">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <h3 style="margin-top:0;">1. Pick a theme</h3>
+  <div class="th-grid">
+    {% for p in presets %}
+    <label class="th-opt">
+      <input type="radio" name="preset" value="{{ p.key }}" data-primary="{{ p.primary }}" data-accent="{{ p.accent }}" data-style="{{ p.style }}" {{ 'checked' if active == p.key }}>
+      <div class="th-swatch"><i style="background:{{ p.primary }}"></i><i style="background:{{ p.accent }}"></i></div>
+      <strong>{{ p.label }}</strong>
+      <span class="s">{{ 'Soft glass' if p.style == 'glass' else 'Classic' }}{% if p.key == 'luminous' %} · default{% endif %}</span>
+    </label>
+    {% endfor %}
+    <label class="th-opt">
+      <input type="radio" name="preset" value="custom" {{ 'checked' if active == 'custom' }}>
+      <div class="th-swatch"><i style="background:linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7)"></i></div>
+      <strong>My own colours</strong>
+      <span class="s">Set them below</span>
+    </label>
+  </div>
+
+  <div id="custom-box">
+    <h3>2. Your colours</h3>
+    <div class="th-row">
+      <label>Main colour <input type="color" name="primary" id="primary" value="{{ t.primary }}"></label>
+      <label>Accent colour <input type="color" name="accent" id="accent" value="{{ t.accent }}"></label>
+    </div>
+    <p class="section-note" style="margin-top:0;">The main colour is used for the top bar, buttons and headings. If it is too light for white text to be readable, it is darkened automatically.</p>
+    <div class="th-styles">
+      <strong>Style</strong>
+      <label><input type="radio" name="style" value="glass" {{ 'checked' if t.style == 'glass' }}> Soft glass: floating rounded top bar, pastel cards, pill buttons</label>
+      <label><input type="radio" name="style" value="classic" {{ 'checked' if t.style != 'glass' }}> Classic: keeps the original layout and only changes the colours</label>
+    </div>
+  </div>
+  <p class="section-note" id="orig-note" hidden>The original green look needs no colour settings.</p>
+
+  <h3>Preview</h3>
+  <div class="th-preview" id="pv">
+    <div class="pv-bar" id="pv-bar"><span>{{ school.name }}</span><span id="pv-menu" style="background:#fff;border-radius:999px;padding:5px 14px;font-size:.85rem;">Menu</span></div>
+    <div class="pv-body">
+      <div class="pv-card"><strong id="pv-title">Welcome</strong><br><small>Timetable, exams and school management</small></div>
+      <button type="button" class="pv-btn" id="pv-btn">Save</button>
+      <span class="pv-chip" id="pv-chip">New</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+    <button type="submit">Save theme</button>
+  </div>
+</form>
+
+<form method="post" action="{{ url_for('themes.reset') }}" class="card" onsubmit="return confirm('Reset the theme to the default?');">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <strong>Start over</strong>
+  <p class="section-note" style="margin:4px 0 10px;">Go back to the default theme (Luminous Blue).</p>
+  <button type="submit" class="secondary">Reset to default</button>
+</form>
+
+<script>
+(function(){
+  var form=document.getElementById('theme-form'), P=document.getElementById('primary'), A=document.getElementById('accent');
+  function mix(a,b,t){function c(h){h=h.replace('#','');return [0,2,4].map(function(i){return parseInt(h.substr(i,2),16);});}
+    var x=c(a),y=c(b);return '#'+x.map(function(v,i){var n=Math.round(v+(y[i]-v)*t);return ('0'+Math.max(0,Math.min(255,n)).toString(16)).slice(-2);}).join('');}
+  function lum(h){h=h.replace('#','');var r=[0,2,4].map(function(i){var c=parseInt(h.substr(i,2),16)/255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4);});return .2126*r[0]+.7152*r[1]+.0722*r[2];}
+  function readable(h){for(var i=0;i<40;i++){if(1.05/(lum(h)+.05)>=4.5)break;h=mix(h,'#000000',.06);}return h;}
+  function preview(){
+    var orig=form.querySelector('input[name=preset]:checked');orig=orig&&orig.value==='original';
+    var p=orig?'#103524':readable(P.value), a=orig?'#f6d98b':A.value;
+    document.getElementById('pv-bar').style.background='linear-gradient(135deg,'+mix(p,'#ffffff',.2)+','+p+')';
+    document.getElementById('pv-menu').style.color=p;
+    document.getElementById('pv-title').style.color=mix(p,'#000000',.78);
+    document.getElementById('pv-btn').style.background=p;
+    var chip=document.getElementById('pv-chip');chip.style.background=mix(a,'#ffffff',.45);chip.style.color=mix(p,'#000000',.78);
+    document.getElementById('custom-box').style.display=orig?'none':'';
+    document.getElementById('orig-note').hidden=!orig;
+  }
+  form.querySelectorAll('input[name=preset]').forEach(function(r){
+    r.addEventListener('change',function(){
+      if(r.dataset.primary){P.value=r.dataset.primary;A.value=r.dataset.accent;
+        form.querySelector('input[name=style][value='+r.dataset.style+']').checked=true;}
+      preview();});
+  });
+  [P,A].forEach(function(el){el.addEventListener('input',function(){
+    form.querySelector('input[name=preset][value=custom]').checked=true;preview();});});
+  form.querySelectorAll('input[name=style]').forEach(function(s){s.addEventListener('change',function(){
+    var cur=form.querySelector('input[name=preset]:checked');if(cur&&cur.value==='original')form.querySelector('input[name=preset][value=custom]').checked=true;preview();});});
+  preview();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<style>
+  .dash-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .dash-top h1{margin:0}
+  .dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin:14px 0 22px}
+  .dash-card{display:flex;flex-direction:column;gap:2px}
+  .dash-card .dc-title{font-size:.85rem;opacity:.75}
+  .dash-card .dc-value{font-size:1.9rem;font-weight:700;line-height:1.15}
+  .dash-card .dc-sub{font-size:.85rem;opacity:.75}
+  .dash-card .dc-link{margin-top:8px;font-weight:600}
+  .dash-chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 22px}
+  .dash-chips a{padding:7px 13px;border:1px solid currentColor;border-radius:999px;text-decoration:none;font-size:.9rem}
+  .dash-panel{display:none;margin-bottom:16px}
+  .dash-panel.open{display:block}
+  .dash-panel label{display:inline-flex;align-items:center;gap:6px;margin:4px 16px 4px 0}
+  .dash-admin{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .dash-admin a{text-decoration:none;display:block}
+  .dash-admin strong{display:block}
+  .dash-admin span{font-size:.85rem;opacity:.75}
+  [data-card].dash-hidden{display:none}
+</style>
+
+<div class="dash-top">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="section-note" style="margin:4px 0 0;">{{ today_label }} · {{ school.name }}</p>
+  </div>
+  {% if cards %}<button type="button" id="dash-custom-btn">Customise</button>{% endif %}
+</div>
+
+{% if cards %}
+<div class="card dash-panel" id="dash-panel">
+  <strong>Show these cards</strong>
+  <p class="section-note" style="margin:2px 0 8px;">Saved on this device only.</p>
+  {% for c in cards %}
+  <label><input type="checkbox" data-toggle="{{ c.key }}" checked> {{ c.title }}</label>
+  {% endfor %}
+  <div style="margin-top:8px;"><button type="button" id="dash-reset">Show all</button></div>
+</div>
+
+<div class="dash-grid">
+  {% for c in cards %}
+  <div class="card dash-card" data-card="{{ c.key }}">
+    <span class="dc-title">{{ c.title }}</span>
+    <span class="dc-value">{{ c.value }}</span>
+    <span class="dc-sub">{{ c.sub }}</span>
+    {% if c.url %}<a class="dc-link" href="{{ c.url }}">{{ c.label }} →</a>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><p class="section-note" style="margin:0;">Nothing to show yet. Ask the administrator to give your role some services on Roles &amp; Access.</p></div>
+{% endif %}
+
+{% if quick %}
+<h3>Quick links</h3>
+<div class="dash-chips">{% for q in quick %}<a href="{{ q.url }}">{{ q.label }}</a>{% endfor %}</div>
+{% endif %}
+
+{% if admin %}
+<h3>Settings</h3>
+<div class="dash-admin">
+  {% for a in admin %}
+  <a class="card" href="{{ a.url }}"><strong>{{ a.label }}</strong><span>{{ a.hint }}</span></a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script>
+(function(){
+  var KEY = "shulehub.dashboard.hidden";
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e){ return []; } }
+  function save(v){ try { localStorage.setItem(KEY, JSON.stringify(v)); } catch(e){} }
+  function apply(){
+    var hidden = load();
+    document.querySelectorAll("[data-card]").forEach(function(el){
+      el.classList.toggle("dash-hidden", hidden.indexOf(el.getAttribute("data-card")) !== -1);
+    });
+    document.querySelectorAll("[data-toggle]").forEach(function(cb){
+      cb.checked = hidden.indexOf(cb.getAttribute("data-toggle")) === -1;
+    });
+  }
+  var btn = document.getElementById("dash-custom-btn"), panel = document.getElementById("dash-panel");
+  if (btn && panel) btn.addEventListener("click", function(){ panel.classList.toggle("open"); });
+  document.querySelectorAll("[data-toggle]").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var k = cb.getAttribute("data-toggle"), hidden = load().filter(function(x){ return x !== k; });
+      if (!cb.checked) hidden.push(k);
+      save(hidden); apply();
+    });
+  });
+  var reset = document.getElementById("dash-reset");
+  if (reset) reset.addEventListener("click", function(){ save([]); apply(); });
+  apply();
+})();
+</script>
+{% endblock %}

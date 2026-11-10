@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ p.topic }}{% endblock %}
+{% block content %}
+<style>
+  .lp-tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:700;background:#e5e7eb;color:#374151}
+  .lp-submitted{background:#fff3cd;color:#664d03}.lp-approved{background:#e3f6ea;color:#1f6b3b}.lp-revise{background:#fde2e7;color:#a02b4a}
+  .lv-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+  .lv-meta span{display:block;font-size:.8rem;opacity:.7}
+  .lv-text{white-space:pre-wrap;margin:0}
+  .lv-sec h4{margin:14px 0 4px}
+</style>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <div><h1 style="margin:0;">{{ p.topic }}</h1><p class="section-note" style="margin:4px 0 0;"><span class="lp-tag lp-{{ p.status }}">{{ status[p.status] }}</span>
+    {% if p.score is not none and p.status in ('approved','revise') %} · Score {{ p.score }}/{{ max_score }}{% endif %}</p></div>
+  <a href="{{ url_for('lp.index') }}">Back to the list</a>
+</div>
+
+<div class="card" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+  <a class="btn secondary" href="{{ url_for('lp.pdf', plan_id=p.id) }}">Download PDF</a>
+  {% if editable %}<a class="btn" href="{{ url_for('lp.edit', plan_id=p.id) }}">Edit</a>
+    <form method="post" action="{{ url_for('lp.submit', plan_id=p.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit">Submit to the DOS</button></form>{% endif %}
+  {% if p.status == 'draft' and mine %}<form method="post" action="{{ url_for('lp.delete', plan_id=p.id) }}" onsubmit="return confirm('Delete this draft?');"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="secondary">Delete draft</button></form>{% endif %}
+  <form method="post" action="{{ url_for('lp.copy', plan_id=p.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="secondary">Copy as a new plan</button></form>
+</div>
+
+{% if p.feedback and p.status in ('approved','revise') %}
+<div class="card" style="{{ 'background:#fde2e7;color:#7a1e36;' if p.status == 'revise' else 'background:#e3f6ea;color:#1f4d33;' }}">
+  <strong>DOS comment</strong> <small>({{ p.reviewed_by }}, {{ p.reviewed_at }})</small><br><span class="lv-text">{{ p.feedback }}</span></div>
+{% endif %}
+
+<div class="card">
+  <div class="lv-meta">
+    <div><span>Teacher</span>{{ p.teacher_name or p.owner }}</div><div><span>Subject</span>{{ p.subject or '-' }}</div>
+    <div><span>Class</span>{{ p.class_label or '-' }}</div><div><span>Date</span>{{ p.plan_date }}</div>
+    <div><span>Term</span>{{ ('Term ' ~ p.term) if p.term else '-' }}</div>{% if p.subtopic %}<div><span>Sub-topic</span>{{ p.subtopic }}</div>{% endif %}
+  </div>
+  {% for key, label, hint in sections %}{% if p[key] %}<div class="lv-sec"><h4>{{ label }}</h4><p class="lv-text">{{ p[key] }}</p></div>{% endif %}{% endfor %}
+</div>
+
+{% if can_mark and p.status != 'draft' %}
+<form method="post" action="{{ url_for('lp.review', plan_id=p.id) }}" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h3 style="margin-top:0;">Mark this plan</h3>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+    <label style="display:flex;flex-direction:column;gap:4px;font-weight:600;">Score (out of {{ max_score }})<input type="number" name="score" min="0" max="{{ max_score }}" value="{{ p.score if p.score is not none else '' }}" style="width:110px;"></label>
+  </div>
+  <label style="display:flex;flex-direction:column;gap:4px;font-weight:600;margin-top:10px;">Comment for the teacher<textarea name="comment" rows="4" placeholder="What was good, and what should change.">{{ p.feedback or '' }}</textarea></label>
+  <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+    <button type="submit" name="outcome" value="approved">Approve</button>
+    <button type="submit" name="outcome" value="revise" class="secondary">Return for revision</button>
+  </div>
+</form>
+{% endif %}
+
+{% if reviews %}
+<div class="card"><h3 style="margin-top:0;">Marking history</h3>
+  {% for r in reviews %}<div style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.08);">
+    <strong>{{ 'Approved' if r.outcome == 'approved' else 'Returned for revision' }}</strong>{% if r.score is not none %} · {{ r.score }}/{{ r.max_score }}{% endif %}
+    <small> · {{ r.reviewer }}, {{ r.reviewed_at }}</small>{% if r.comment %}<br><span class="lv-text">{{ r.comment }}</span>{% endif %}</div>{% endfor %}
+</div>{% endif %}
+{% endblock %}

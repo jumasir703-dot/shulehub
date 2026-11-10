@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block content %}<h1>Tracked links</h1>
+<div class="card"><h2>New link</h2><form method="post" action="{{ url_for('link_new') }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<div class="two"><div><label>Who is it for? (school or person)</label><input name="recipient" required></div><div><label>Their phone or email (optional)</label><input name="contact"></div></div>
+<div class="two"><div><label>Upload the file (zip, exe…)</label><input type="file" name="file"></div><div><label>…or a web address to send them to (Drive, OneDrive, GitHub)</label><input name="url" placeholder="https://"></div></div>
+<label>Note to yourself (optional)</label><input name="note"><p><button>Create link</button></p></form></div>
+<div class="card"><table><tr><th>For</th><th>Link to send</th><th>Opened</th><th>Devices</th><th>Downloaded</th><th>Last opened</th><th></th></tr>
+{% for l in links %}<tr><td><a href="{{ url_for('link_detail', lid=l.id) }}"><b>{{ l.recipient }}</b></a><br><span class="muted">{{ l.contact }}</span></td>
+<td><span class="copy">{{ request.host_url }}d/{{ l.token }}</span></td>
+<td>{% if l.views %}<span class="tag ok">{{ l.views }}×</span>{% else %}<span class="tag warn">not yet</span>{% endif %}{% if l.previews %}<br><span class="muted" style="font-size:.75rem">{{ l.previews }} preview(s) ignored</span>{% endif %}</td>
+<td>{{ l.devices }}{% if l.devices > 1 %} <span class="tag warn">forwarded?</span>{% endif %}</td><td>{{ l.downloads }}</td><td>{{ l.last_open|local }}</td>
+<td>{% if not l.active %}<span class="tag bad">off</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">No links yet.</td></tr>{% endfor %}</table></div>{% endblock %}

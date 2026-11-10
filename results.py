@@ -26,7 +26,7 @@ from flask import (
 
 import database as db
 import exam_analysis as ea
-import workflow as wf
+import results_workflow as wf
 from analytics import (
     _ADMISSION_ALIASES, _adm_key, _csv_safe, _headings, _norm, _parse_score,
     _read_csv_upload, _safe_filename, _stream_students, _upsert_mark,

@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block title %}Download ShuleHub{% endblock %}{% block content %}
+<div class="card" style="max-width:520px;margin:50px auto;text-align:center">
+<h1>ShuleHub</h1><p>Timetable, exam analysis and school management.</p>
+<p class="muted">Prepared for <b>{{ link.recipient }}</b>{% if link.file_name %}<br>{{ link.file_name }}{% if size %} · {{ size }}{% endif %}{% endif %}</p>
+<p><a class="btn" href="{{ url_for('download', token=link.token) }}">Download</a></p>
+<p class="muted" style="font-size:.78rem">Opening this page and downloading are recorded so the sender knows the file arrived.</p></div>{% endblock %}

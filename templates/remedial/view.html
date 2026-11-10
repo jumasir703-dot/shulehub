@@ -2,21 +2,20 @@
 {% block title %}Remedial Timetable{% endblock %}
 {% block content %}
 {% include "master/_grid_style.html" %}
-<h1 class="no-print">Remedial Timetable <span class="section-note" style="font-weight:400;">· {{ profiles[schedule].label }}</span></h1>
+<h1 class="no-print">Remedial Timetable</h1>
 {% include "remedial/_nav.html" %}
 
 {% if not m.configured %}
 <div class="card">
   <p class="section-note" style="margin:0;">
-    No extra working hours have been set up for the {{ profiles[schedule].label|lower }} schedule yet.
-    {% if can('timetable_edit') %}<a href="{{ url_for('remedial.setup', schedule=schedule) }}">Set up the extra hours</a> first (morning and evening days, start times, session length), then choose the subjects and teachers.{% endif %}
+    No extra working hours have been set up yet.
+    {% if can('timetable_edit') %}<a href="{{ url_for('remedial.setup') }}">Set up the extra hours</a> first (days, start time, session length), then choose the subjects and teachers.{% endif %}
   </p>
 </div>
 {% else %}
 
 <div class="card no-print">
   <form method="get" class="form-row" style="margin-top:0;">
-    <input type="hidden" name="schedule" value="{{ schedule }}">
     <div>
       <label>Layout</label>
       <select name="layout" onchange="this.form.submit()">
@@ -48,30 +47,28 @@
     {% if m.has_entries %}
     <div class="mt-actions">
       <button type="button" class="secondary" onclick="window.print()">Print</button>
-      <a class="btn secondary" href="{{ url_for('remedial.export_csv', schedule=schedule, layout=m.layout, day=m.day, grade=m.grade) }}">Export to CSV</a>
-      <a class="btn secondary" href="{{ url_for('remedial.export_pdf', schedule=schedule, layout=m.layout, day=m.day, grade=m.grade) }}">Download PDF</a>
+      <a class="btn secondary" href="{{ url_for('remedial.export_csv', layout=m.layout, day=m.day, grade=m.grade) }}">Export to CSV</a>
+      <a class="btn secondary" href="{{ url_for('remedial.export_pdf', layout=m.layout, day=m.day, grade=m.grade) }}">Download PDF</a>
     </div>
     {% endif %}
   </form>
   <p class="section-note">
     {% if m.layout == 'class' %}
-      Each row is a class; each cell shows the remedial subject and its teacher. M = morning sessions, E = evening sessions.
+      Each row is a class; each cell shows the remedial subject and its teacher.
     {% else %}
-      Each row is a remedial teacher; each cell shows the subject and the class. M = morning, E = evening. Empty cells are free.
+      Each row is a remedial teacher; each cell shows the subject and the class. Empty cells are free sessions.
     {% endif %}
   </p>
 
   {% if can('timetable_edit') %}
   <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;">
     <form method="post" action="{{ url_for('remedial.generate_view') }}"
-          {% if m.has_entries %}onsubmit="return confirm('Generate again? This replaces the current {{ profiles[schedule].label|lower }} remedial timetable. The other schedule is not changed.');"{% endif %}>
-      <input type="hidden" name="schedule" value="{{ schedule }}">
-      <button type="submit">{{ 'Regenerate' if m.has_entries else 'Generate ' ~ profiles[schedule].label|lower ~ ' timetable' }}</button>
+          {% if m.has_entries %}onsubmit="return confirm('Generate again? This replaces the current remedial timetable.');"{% endif %}>
+      <button type="submit">{{ 'Regenerate' if m.has_entries else 'Generate remedial timetable' }}</button>
     </form>
     {% if m.has_entries %}
     <form method="post" action="{{ url_for('remedial.clear') }}"
-          onsubmit="return confirm('Clear the {{ profiles[schedule].label|lower }} remedial timetable?');">
-      <input type="hidden" name="schedule" value="{{ schedule }}">
+          onsubmit="return confirm('Clear the whole remedial timetable?');">
       <button type="submit" class="secondary">Clear</button>
     </form>
     {% endif %}
@@ -82,9 +79,9 @@
 {% if not m.has_entries %}
 <div class="card">
   <p class="section-note" style="margin:0;">
-    No {{ profiles[schedule].label|lower }} remedial timetable has been generated yet.
+    No remedial timetable has been generated yet.
     {% if can('timetable_edit') %}
-      {% if has_plan %}Press <strong>Generate {{ profiles[schedule].label|lower }} timetable</strong> above.{% else %}First choose the subjects and teachers on the <a href="{{ url_for('remedial.plan', schedule=schedule) }}">Subjects &amp; teachers</a> page.{% endif %}
+      {% if has_plan %}Press <strong>Generate remedial timetable</strong> above.{% else %}First choose the subjects and teachers on the <a href="{{ url_for('remedial.plan') }}">Subjects &amp; teachers</a> page.{% endif %}
     {% endif %}
   </p>
 </div>
